@@ -970,6 +970,11 @@ $baseQuery['per_page'] = $perPage;
 <?php if ($staticPage !== ''): ?>
     <?php $selectedPage = $staticPages[$staticPage]; ?>
     <?php recordPageVisit('page:' . $staticPage, 'Static Page: ' . $selectedPage['title']); ?>
+    <?php if ($shouldRenderGlobalAd): ?>
+        <section class="mb-4" aria-label="Top sponsored placement">
+            <?= $globalAdUnitHtml ?>
+        </section>
+    <?php endif; ?>
     <section class="policy-card">
         <h1 class="h3 mb-3"><?= e($selectedPage['title']) ?></h1>
         <?php foreach ($selectedPage['content'] as $block): ?>
