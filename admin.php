@@ -2376,6 +2376,7 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
                                     <div class="col-12">
                                         <small class="text-secondary">لكل نيش قائمة مستقلة بالكامل للمصادر. يمكنك لصق قائمة روابط كاملة وسيتم استبدالها دفعة واحدة.</small>
                                     </div>
+                                </form>
                                 <form method="post" class="row g-2 mt-3 border-top pt-2">
                                     <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
                                     <input type="hidden" name="niche_title_slug" value="<?= e($n['slug']) ?>">
