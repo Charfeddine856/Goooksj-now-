@@ -15,7 +15,7 @@ $remainingLockSeconds = max(0, $_SESSION['login_lock_until'] - $now);
 
 $requestMethod = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
-if (!isset($_SESSION['logged']) && $requestMethod === 'POST' && isset($_POST['pass'])) {
+if (empty($_SESSION['logged']) && $requestMethod === 'POST' && isset($_POST['pass'])) {
     $submittedPassword = (string)($_POST['pass'] ?? '');
 
     if ($isLocked) {
@@ -45,7 +45,7 @@ if (!isset($_SESSION['logged']) && $requestMethod === 'POST' && isset($_POST['pa
     exit;
 }
 
-if (!isset($_SESSION['logged'])) {
+if (empty($_SESSION['logged'])) {
     $loginError = $_SESSION['login_error'] ?? null;
     unset($_SESSION['login_error']);
     ?>
@@ -1781,6 +1781,18 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
         .section-card {
             background: #4a273b;
             border: 1px solid rgba(255, 255, 255, 0.08);
+            overflow-wrap: anywhere;
+        }
+        .container {
+            max-width: 1360px;
+        }
+        .form-control,
+        .form-select,
+        .btn {
+            min-height: 42px;
+        }
+        .table-responsive {
+            border-radius: 0.65rem;
         }
         .stat-card h3,
         .stat-card h6 {
@@ -1980,6 +1992,13 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
             min-width: 118px;
         }
         @media (max-width: 991.98px) {
+            body {
+                background-attachment: scroll;
+            }
+            .container {
+                padding-left: 0.8rem;
+                padding-right: 0.8rem;
+            }
             .panel-nav-toolbar .btn {
                 min-height: 46px;
             }
@@ -1994,9 +2013,32 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
             .panel-nav-btn {
                 font-size: 0.95rem;
                 padding: 0.6rem 0.75rem;
+                white-space: normal;
             }
             .panel-nav-toolbar {
                 flex-direction: row;
+                flex-wrap: wrap;
+            }
+            .d-flex.gap-2 {
+                flex-wrap: wrap;
+            }
+            h1 {
+                font-size: 1.45rem;
+                line-height: 1.35;
+            }
+            .table {
+                font-size: 0.9rem;
+            }
+            .card-body {
+                padding: 0.9rem;
+            }
+        }
+        @media (min-width: 1200px) {
+            #control-panel-nav {
+                max-height: calc(100vh - 14rem);
+            }
+            .section-card {
+                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
             }
         }
     </style>
