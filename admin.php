@@ -3352,9 +3352,12 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
             refreshLabel();
         });
 
-        const sourceCards = Array.from(document.querySelectorAll('#control-cards-source .panel-section, #control-cards-source .section-card')).filter(function (card, idx, arr) {
-            return arr.indexOf(card) === idx;
-        });
+        const sourceContainer = document.getElementById('control-cards-source');
+        const sourceCards = sourceContainer
+            ? Array.from(sourceContainer.children).filter(function (el) {
+                return el.classList.contains('panel-section') || el.classList.contains('section-card');
+            })
+            : [];
         const panelNav = document.getElementById('control-panel-nav');
         const panelSearch = document.getElementById('control-panel-search');
         const activeSectionLabel = document.getElementById('active-section-label');
@@ -3364,6 +3367,10 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
         const emptyState = document.getElementById('control-panel-empty');
         const sectionCounter = document.getElementById('section-counter');
         let currentIndex = 0;
+
+        if (sectionCounter) {
+            sectionCounter.textContent = sourceCards.length ? '1/' + sourceCards.length + ' sections' : '0/0 sections';
+        }
 
         function getVisibleButtons() {
             return Array.from(panelNav.querySelectorAll('button')).filter(function (btn) {
@@ -3443,10 +3450,9 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
 
 
         if (!sourceCards.length) {
-            const sourceContainer = document.getElementById('control-cards-source');
             if (sourceContainer) {
                 sourceContainer.classList.remove('d-none');
-                sourceContainer.querySelectorAll('.panel-section').forEach(function (card) {
+                sourceContainer.querySelectorAll('.panel-section, .section-card').forEach(function (card) {
                     card.style.display = 'block';
                 });
             }
