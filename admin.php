@@ -672,6 +672,73 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    if (isset($_POST['fill_smart_sources_10_per_niche'])) {
+        $nichesForFill = $pdo->query("SELECT slug, name FROM niches ORDER BY id")->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        $presetUrls = [];
+        foreach ($nichesForFill as $n) {
+            $slug = trim((string)($n['slug'] ?? 'general'));
+            if ($slug === '') $slug = 'general';
+            $safe = preg_replace('/[^a-z0-9\-]/i', '-', strtolower($slug));
+            for ($i = 1; $i <= 10; $i++) {
+                $presetUrls[] = "https://{$safe}.news-source{$i}.example/feed.xml";
+            }
+        }
+        setSetting('smart_source_prefill_bulk', implode("\n", $presetUrls));
+        $_SESSION['flash_message'] = 'تم تجهيز قائمة كبيرة: 10 روابط RSS لكل نيش. يمكنك تعديلها ثم حفظها.';
+        $_SESSION['flash_type'] = 'success';
+        header('Location: admin.php#auto-scheduler-section');
+        exit;
+    }
+
+    if (isset($_POST['fill_all_smart_hub_fields'])) {
+        $nichesForFill = $pdo->query("SELECT slug, name FROM niches ORDER BY id")->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        $firstSlug = (string)($nichesForFill[0]['slug'] ?? 'general');
+        if ($firstSlug === '') $firstSlug = 'general';
+        setSetting('active_niche', $firstSlug);
+        setSetting('auto_title_mode', 'template');
+        setSetting('auto_publish_interval_seconds_from', '1800');
+        setSetting('auto_publish_interval_seconds_to', '7200');
+        setSetting('auto_ai_enabled', '1');
+        setSetting('smart_source_prefill_url', 'https://news.google.com/rss/search?q=' . rawurlencode($firstSlug));
+        setSetting('smart_source_prefill_type', 'rss');
+        setSetting('smart_source_prefill_niche', $firstSlug);
+
+        $presetUrls = [];
+        foreach ($nichesForFill as $n) {
+            $slug = trim((string)($n['slug'] ?? 'general'));
+            if ($slug === '') $slug = 'general';
+            $safe = preg_replace('/[^a-z0-9\-]/i', '-', strtolower($slug));
+            for ($i = 1; $i <= 10; $i++) {
+                $presetUrls[] = "https://{$safe}.news-source{$i}.example/feed.xml";
+            }
+        }
+        setSetting('smart_source_prefill_bulk', implode("\n", $presetUrls));
+        $_SESSION['flash_message'] = 'تم ملء كل الخانات تلقائياً مع 10 RSS لكل نيش.';
+        $_SESSION['flash_type'] = 'success';
+        header('Location: admin.php#auto-scheduler-section');
+        exit;
+    }
+
+    if (isset($_POST['fill_closed_fields_all_niches'])) {
+        $nichesForFill = $pdo->query("SELECT slug FROM niches ORDER BY id")->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        $allSlugs = [];
+        foreach ($nichesForFill as $n) {
+            $slug = trim((string)($n['slug'] ?? ''));
+            if ($slug !== '') {
+                $allSlugs[] = $slug;
+            }
+        }
+        $allSlugs = array_values(array_unique($allSlugs));
+        $firstSlug = (string)($allSlugs[0] ?? 'general');
+        setSetting('smart_source_prefill_selected_niches', implode(',', $allSlugs));
+        setSetting('smart_source_prefill_niche', $firstSlug);
+        setSetting('active_niche', $firstSlug);
+        $_SESSION['flash_message'] = 'تم تعبئة الخانات المغلقة بكل النيشات المتاحة.';
+        $_SESSION['flash_type'] = 'success';
+        header('Location: admin.php#auto-scheduler-section');
+        exit;
+    }
+
     if (isset($_POST['add_source_smart'])) {
         $smartUrl = trim((string)($_POST['smart_source_url'] ?? ''));
         $smartUrlsBulk = trim((string)($_POST['smart_source_urls'] ?? ''));
@@ -2228,16 +2295,89 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
                 </div>
             </div>
 
-            <div class="card section-card mb-3" id="niche-management">
+
+            <div class="card section-card mb-3">
                 <div class="card-body">
-                    <h5><i class="bi bi-kanban-fill"></i> Niche Management</h5>
+                    <h5><i class="bi bi-diagram-3"></i> Content Workflow Selection</h5>
+                    <form method="post" class="row g-2 align-items-end">
+                        <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
+                        <div class="col-8">
+                            <label class="form-label">Selected Content Workflow</label>
+                            <select name="content_workflow" class="form-select">
+                                <option value="rss" <?= $selectedWorkflow === 'rss' ? 'selected' : '' ?>>RSS Workflow</option>
+                                <option value="web" <?= $selectedWorkflow === 'web' ? 'selected' : '' ?>>Normal Sites Workflow (Symfony DomCrawler)</option>
+                            </select>
+                        </div>
+                        <div class="col-4">
+                            <button name="update_content_workflow" value="1" class="btn btn-outline-light w-100">Apply</button>
+                        </div>
+                    </form>
+                    <small class="text-secondary">Cron and manual run will execute the selected workflow only.</small>
+                </div>
+            </div>
+
+            <div class="card section-card mb-3" id="auto-scheduler-section">
+                <div class="card-body">
+                    <h5 class="text-danger"><i class="bi bi-robot"></i> Smart Niche Automation Hub <span class="badge text-bg-dark ms-2">Pro</span></h5>
+                    <p class="text-secondary mb-3">دمج ذكي بين <strong>AI Auto Publish Scheduler</strong> و <strong>Niche Management</strong> و <strong>Auto Title Generator Controls</strong> و <strong>Source Intake</strong> في لوحة واحدة لإدارة أسرع وأوضح.</p>
+                    <form method="post" class="row g-2 align-items-end mb-3">
+                        <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
+                        <div class="col-md-4">
+                            <label class="form-label">Active Niche</label>
+                            <select name="smart_active_niche" class="form-select">
+                                <?php foreach ($nichesList as $n): ?>
+                                    <option value="<?= e($n['slug']) ?>" <?= e((string)getSetting('active_niche', 'general')) === $n['slug'] ? 'selected' : '' ?>><?= e($n['name']) ?> (<?= e($n['slug']) ?>)</option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Auto Title Mode</label>
+                            <select name="smart_auto_title_mode" class="form-select">
+                                <option value="template" <?= $autoTitleMode === 'template' ? 'selected' : '' ?>>Template + Variables</option>
+                                <option value="list" <?= $autoTitleMode === 'list' ? 'selected' : '' ?>>Fixed Titles List</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Interval From</label>
+                            <input type="number" name="smart_auto_publish_interval_seconds_from" class="form-control" min="0" max="300000" value="<?= (int)$autoPublishIntervalFrom ?>">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Interval To</label>
+                            <input type="number" name="smart_auto_publish_interval_seconds_to" class="form-control" min="0" max="300000" value="<?= (int)$autoPublishIntervalTo ?>">
+                        </div>
+                        <div class="col-md-1">
+                            <div class="form-check form-switch mt-4">
+                                <input class="form-check-input" type="checkbox" role="switch" id="smart_auto_ai_enabled" name="smart_auto_ai_enabled" value="1" <?= $autoAiEnabled ? 'checked' : '' ?>>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <button name="update_smart_niche_automation" value="1" class="btn btn-warning w-100">Apply Smart Merge Settings</button>
+                        </div>
+                    </form>
+
+                    <div class="alert alert-info">
+                        <strong>أمثلة نيشات مقترحة:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li><strong>EV</strong>: Tesla, BYD, Lucid + محتوى الشحن السريع والمدى.</li>
+                            <li><strong>SUV Family</strong>: أمان العائلة، المساحة، أفضل 7 مقاعد.</li>
+                            <li><strong>Luxury</strong>: Mercedes, BMW, Audi + مراجعات الفخامة والتقنيات.</li>
+                            <li><strong>Motorcycles</strong>: Adventure/Street bikes + معدات القيادة.</li>
+                            <li><strong>Budget Cars</strong>: أفضل سيارات اقتصادية واستهلاك الوقود.</li>
+                        </ul>
+                    </div>
+
+
+                    <hr class="border-secondary-subtle my-3">
+                    <h6><span class="badge text-bg-secondary me-2">1</span><i class="bi bi-kanban-fill"></i> Niche Management (Integrated)</h6>
+
                     <form method="post" class="row g-2 mb-3">
                         <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
                         <div class="col-12">
                             <label class="form-label">نشر محتوى لأكثر من نيش</label>
+                            <?php $prefilledSelectedNiches = array_values(array_filter(array_map('trim', explode(',', (string)getSetting('smart_source_prefill_selected_niches', ''))))); ?>
                             <select name="multi_niches[]" class="form-select" multiple>
                                 <?php foreach ($nichesList as $n): ?>
-                                    <option value="<?= e($n['slug']) ?>"><?= e($n['name']) ?> (<?= e($n['slug']) ?>)</option>
+                                    <option value="<?= e($n['slug']) ?>" <?= in_array($n['slug'], $prefilledSelectedNiches, true) ? 'selected' : '' ?>><?= e($n['name']) ?> (<?= e($n['slug']) ?>)</option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
@@ -2353,7 +2493,7 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
                                         <input type="url" name="source_url" class="form-control" placeholder="https://example.com/feed.xml" required>
                                     </div>
                                     <div class="col-2">
-                                        <button name="add_niche_source" class="btn btn-outline-light w-100">Add</button>
+                                        <button name="add_niche_source" class="btn btn-outline-light w-100">Save Source</button>
                                     </div>
                                 </form>
 
@@ -2511,92 +2651,21 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
                         </div>
                     </form>
                     <small class="text-secondary">Includes the main configuration values from <code>config.php</code> so you can manage them from one place.</small>
-                </div>
-            </div>
-
-            <div class="card section-card mb-3">
-                <div class="card-body">
-                    <h5><i class="bi bi-diagram-3"></i> Content Workflow Selection</h5>
-                    <form method="post" class="row g-2 align-items-end">
-                        <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
-                        <div class="col-8">
-                            <label class="form-label">Selected Content Workflow</label>
-                            <select name="content_workflow" class="form-select">
-                                <option value="rss" <?= $selectedWorkflow === 'rss' ? 'selected' : '' ?>>RSS Workflow</option>
-                                <option value="web" <?= $selectedWorkflow === 'web' ? 'selected' : '' ?>>Normal Sites Workflow (Symfony DomCrawler)</option>
-                            </select>
-                        </div>
-                        <div class="col-4">
-                            <button name="update_content_workflow" value="1" class="btn btn-outline-light w-100">Apply</button>
-                        </div>
-                    </form>
-                    <small class="text-secondary">Cron and manual run will execute the selected workflow only.</small>
-                </div>
-            </div>
-
-            <div class="card section-card mb-3" id="auto-scheduler-section">
-                <div class="card-body">
-                    <h5 class="text-danger"><i class="bi bi-robot"></i> Smart Niche Automation Hub</h5>
-                    <p class="text-secondary mb-3">دمج ذكي بين <strong>AI Auto Publish Scheduler</strong> و <strong>Niche Management</strong> و <strong>Auto Title Generator Controls</strong> في لوحة واحدة لإدارة أسرع.</p>
-                    <form method="post" class="row g-2 align-items-end mb-3">
-                        <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
-                        <div class="col-md-4">
-                            <label class="form-label">Active Niche</label>
-                            <select name="smart_active_niche" class="form-select">
-                                <?php foreach ($nichesList as $n): ?>
-                                    <option value="<?= e($n['slug']) ?>" <?= e((string)getSetting('active_niche', 'general')) === $n['slug'] ? 'selected' : '' ?>><?= e($n['name']) ?> (<?= e($n['slug']) ?>)</option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Auto Title Mode</label>
-                            <select name="smart_auto_title_mode" class="form-select">
-                                <option value="template" <?= $autoTitleMode === 'template' ? 'selected' : '' ?>>Template + Variables</option>
-                                <option value="list" <?= $autoTitleMode === 'list' ? 'selected' : '' ?>>Fixed Titles List</option>
-                            </select>
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label">Interval From</label>
-                            <input type="number" name="smart_auto_publish_interval_seconds_from" class="form-control" min="0" max="300000" value="<?= (int)$autoPublishIntervalFrom ?>">
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label">Interval To</label>
-                            <input type="number" name="smart_auto_publish_interval_seconds_to" class="form-control" min="0" max="300000" value="<?= (int)$autoPublishIntervalTo ?>">
-                        </div>
-                        <div class="col-md-1">
-                            <div class="form-check form-switch mt-4">
-                                <input class="form-check-input" type="checkbox" role="switch" id="smart_auto_ai_enabled" name="smart_auto_ai_enabled" value="1" <?= $autoAiEnabled ? 'checked' : '' ?>>
-                            </div>
-                        </div>
-                        <div class="col-12">
-                            <button name="update_smart_niche_automation" value="1" class="btn btn-warning w-100">Apply Smart Merge Settings</button>
-                        </div>
-                    </form>
-
-                    <div class="alert alert-info">
-                        <strong>أمثلة نيشات مقترحة:</strong>
-                        <ul class="mb-0 mt-2">
-                            <li><strong>EV</strong>: Tesla, BYD, Lucid + محتوى الشحن السريع والمدى.</li>
-                            <li><strong>SUV Family</strong>: أمان العائلة، المساحة، أفضل 7 مقاعد.</li>
-                            <li><strong>Luxury</strong>: Mercedes, BMW, Audi + مراجعات الفخامة والتقنيات.</li>
-                            <li><strong>Motorcycles</strong>: Adventure/Street bikes + معدات القيادة.</li>
-                            <li><strong>Budget Cars</strong>: أفضل سيارات اقتصادية واستهلاك الوقود.</li>
-                        </ul>
-                    </div>
-
+                
                     <hr class="border-secondary-subtle my-3">
-                    <h6><i class="bi bi-link-45deg"></i> Quick Source Merge (RSS + Web + Niche)</h6>
+                    <h6><span class="badge text-bg-secondary me-2">2</span><i class="bi bi-columns-gap"></i> Unified Source Intake (RSS + Web) linked to Niche</h6>
                     <form method="post" class="row g-2 mb-3">
                         <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
                         <div class="col-md-5">
-                            <input type="url" name="smart_source_url" class="form-control" placeholder="https://example.com/feed.xml or /news/">
-                            <textarea name="smart_source_urls" class="form-control mt-2" rows="2" placeholder="Bulk URLs (one per line)"></textarea>
+                            <input type="url" name="smart_source_url" class="form-control" value="<?= e((string)getSetting('smart_source_prefill_url', '')) ?>" placeholder="https://example.com/feed.xml or /news/">
+                            <textarea name="smart_source_urls" class="form-control mt-2" rows="10" placeholder="Bulk URLs (one per line)"><?= e((string)getSetting('smart_source_prefill_bulk', '')) ?></textarea>
+                            <small class="text-secondary d-block mt-1">تم تعمير هذه الخانة تلقائياً عند الضغط على زر التعبئة الذكية.</small>
                         </div>
                         <div class="col-md-3">
                             <select name="smart_source_type" class="form-select">
-                                <option value="auto">Auto Detect Type</option>
-                                <option value="rss">Force RSS</option>
-                                <option value="web">Force Web</option>
+                                <option value="auto" <?= e((string)getSetting('smart_source_prefill_type', 'auto')) === 'auto' ? 'selected' : '' ?>>Auto Detect Type</option>
+                                <option value="rss" <?= e((string)getSetting('smart_source_prefill_type', 'auto')) === 'rss' ? 'selected' : '' ?>>Force RSS</option>
+                                <option value="web" <?= e((string)getSetting('smart_source_prefill_type', 'auto')) === 'web' ? 'selected' : '' ?>>Force Web</option>
                             </select>
                         </div>
                         <div class="col-md-3">
@@ -2608,44 +2677,19 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
                             </select>
                         </div>
                         <div class="col-md-1">
-                            <button name="add_source_smart" value="1" class="btn btn-warning w-100" onclick="this.form.smart_source_preview.value='0';">Add</button>
-                            <button name="add_source_smart" value="1" class="btn btn-outline-info w-100 mt-2" onclick="this.form.smart_source_preview.value='1';">Preview</button>
+                            <button name="add_source_smart" value="1" class="btn btn-warning w-100" onclick="this.form.smart_source_preview.value='0';">Save Source</button>
+                            <button name="add_source_smart" value="1" class="btn btn-outline-info w-100 mt-2" onclick="this.form.smart_source_preview.value='1';">Preview Parse</button>
                             <input type="hidden" name="smart_source_preview" value="0">
+                            <button name="fill_smart_sources_10_per_niche" value="1" class="btn btn-outline-light w-100 mt-2">Fill 10 RSS / Niche</button>
+                            <button name="fill_all_smart_hub_fields" value="1" class="btn btn-light w-100 mt-2">Fill All Fields</button>
+                            <button name="fill_closed_fields_all_niches" value="1" class="btn btn-secondary w-100 mt-2">Fill Closed Fields / All Niches</button>
                         </div>
                     </form>
-                    <div class="row g-2 mb-3">
-                        <div class="col-md-6">
-                            <form method="post" class="p-2 border rounded border-secondary-subtle">
-                                <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
-                                <label class="form-label small mb-1">Add RSS Source to Hub</label>
-                                <input type="url" name="rss_url" class="form-control form-control-sm" placeholder="https://example.com/feed.xml" required>
-                                <select name="rss_target_niche_slug" class="form-select form-select-sm mt-2">
-                                    <option value="">Global only (no niche link)</option>
-                                    <?php foreach ($nichesList as $n): ?>
-                                        <option value="<?= e($n['slug']) ?>"><?= e($n['name']) ?> (<?= e($n['slug']) ?>)</option>
-                                    <?php endforeach; ?>
-                                </select>
-                                <button name="add_rss" class="btn btn-outline-warning btn-sm w-100 mt-2">Add RSS Source</button>
-                            </form>
-                        </div>
-                        <div class="col-md-6">
-                            <form method="post" class="p-2 border rounded border-secondary-subtle">
-                                <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
-                                <label class="form-label small mb-1">Add Normal Website Source to Hub</label>
-                                <input type="url" name="web_url" class="form-control form-control-sm" placeholder="https://example.com/news/" required>
-                                <select name="web_target_niche_slug" class="form-select form-select-sm mt-2">
-                                    <option value="">Global only (no niche link)</option>
-                                    <?php foreach ($nichesList as $n): ?>
-                                        <option value="<?= e($n['slug']) ?>"><?= e($n['name']) ?> (<?= e($n['slug']) ?>)</option>
-                                    <?php endforeach; ?>
-                                </select>
-                                <button name="add_web" class="btn btn-outline-warning btn-sm w-100 mt-2">Add Website Source</button>
-                            </form>
-                        </div>
+                    <div class="alert alert-secondary small mb-3">
+                        استخدم نموذج <strong>Unified Source Intake</strong> أعلاه لإضافة RSS أو مواقع عادية (مفرد أو جماعي) مع ربط اختياري بالنيش.
                     </div>
-
                     <hr class="border-secondary-subtle my-3">
-                    <h6><i class="bi bi-sliders"></i> Advanced Scheduler + Title Controls</h6>
+                    <h6><span class="badge text-bg-secondary me-2">3</span><i class="bi bi-sliders"></i> Advanced Scheduler + Title Controls</h6>
                     <form method="post" class="row g-2 align-items-end mb-3">
                         <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
                         <div class="col-12">
@@ -2653,7 +2697,7 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
                             <select name="niche_auto_title" class="form-select">
                                 <option value="">اختر النيش</option>
                                 <?php foreach ($nichesList as $n): ?>
-                                    <option value="<?= e($n['slug']) ?>"><?= e($n['name']) ?> (<?= e($n['slug']) ?>)</option>
+                                    <option value="<?= e($n['slug']) ?>" <?= e((string)getSetting('smart_source_prefill_niche', '')) === $n['slug'] ? 'selected' : '' ?>><?= e($n['name']) ?> (<?= e($n['slug']) ?>)</option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
@@ -2836,43 +2880,6 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
                 </div>
             </div>
 
-            <div class="card section-card">
-                <div class="card-body">
-                    <h5><i class="bi bi-rss"></i> Add RSS Source</h5>
-                    <form method="post">
-                        <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
-                        <input type="url" name="rss_url" class="form-control" placeholder="https://example.com/feed.xml">
-                        <select name="rss_target_niche_slug" class="form-select mt-2">
-                            <option value="">Optional: Link to niche</option>
-                            <?php foreach ($nichesList as $n): ?>
-                                <option value="<?= e($n['slug']) ?>"><?= e($n['name']) ?> (<?= e($n['slug']) ?>)</option>
-                            <?php endforeach; ?>
-                        </select>
-                        <textarea name="rss_urls" class="form-control mt-2" rows="5" placeholder="Paste multiple RSS/XML links (one per line)"></textarea>
-                        <small class="text-secondary d-block mt-2">You can add a single URL above or paste a full XML links list.</small>
-                        <button name="add_rss" class="btn btn-outline-light mt-3 w-100">Save Source(s)</button>
-                    </form>
-                </div>
-            </div>
-
-            <div class="card section-card mt-3">
-                <div class="card-body">
-                    <h5><i class="bi bi-globe2"></i> Add Normal Website Source</h5>
-                    <form method="post">
-                        <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
-                        <input type="url" name="web_url" class="form-control" placeholder="https://example.com/news/">
-                        <select name="web_target_niche_slug" class="form-select mt-2">
-                            <option value="">Optional: Link to niche</option>
-                            <?php foreach ($nichesList as $n): ?>
-                                <option value="<?= e($n['slug']) ?>"><?= e($n['name']) ?> (<?= e($n['slug']) ?>)</option>
-                            <?php endforeach; ?>
-                        </select>
-                        <textarea name="web_urls" class="form-control mt-2" rows="5" placeholder="Paste multiple normal website links (one per line)"></textarea>
-                        <small class="text-secondary d-block mt-2">Used by Normal Sites workflow with Symfony DomCrawler + CSS selectors.</small>
-                        <button name="add_web" class="btn btn-outline-light mt-3 w-100">Save Website Source(s)</button>
-                    </form>
-                </div>
-            </div>
         </div>
 
         <div class="col-xl-12" id="content-data">
