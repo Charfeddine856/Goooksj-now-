@@ -1848,6 +1848,7 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
         }
         .panel-nav-btn {
             text-align: left;
+            min-height: 42px;
             border: 1px solid rgba(248, 113, 113, 0.35);
             color: #ffb4b5;
             background: rgba(220, 38, 38, 0.08);
@@ -1878,6 +1879,12 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
         }
         .panel-nav-toolbar .btn {
             flex: 1;
+            min-height: 44px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.35rem;
+            font-weight: 600;
         }
         #control-panel-nav {
             max-height: calc(100vh - 17rem);
@@ -1886,6 +1893,8 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
         }
         .section-counter {
             display: inline-block;
+            min-width: 92px;
+            text-align: center;
             font-size: 0.75rem;
             border: 1px solid rgba(148, 163, 184, 0.45);
             border-radius: 999px;
@@ -1971,6 +1980,9 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
             min-width: 118px;
         }
         @media (max-width: 991.98px) {
+            .panel-nav-toolbar .btn {
+                min-height: 46px;
+            }
             .dashboard-sidebar {
                 position: static;
                 max-height: none;
@@ -1981,7 +1993,10 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
             }
             .panel-nav-btn {
                 font-size: 0.95rem;
-                padding: 0.55rem 0.7rem;
+                padding: 0.6rem 0.75rem;
+            }
+            .panel-nav-toolbar {
+                flex-direction: row;
             }
         }
     </style>
@@ -2114,8 +2129,8 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
                     <span class="section-counter" id="section-counter">0/0 sections</span>
                     <small class="d-block text-secondary mb-2" id="active-section-label">Active: —</small>
                     <div class="panel-nav-toolbar">
-                        <button type="button" class="btn btn-sm btn-outline-light" id="panel-prev-btn"><i class="bi bi-arrow-up"></i> Prev</button>
-                        <button type="button" class="btn btn-sm btn-outline-light" id="panel-next-btn">Next <i class="bi bi-arrow-down"></i></button>
+                        <button type="button" class="btn btn-sm btn-outline-light" id="panel-prev-btn" aria-label="Previous section"><i class="bi bi-arrow-left"></i><span>Previous</span></button>
+                        <button type="button" class="btn btn-sm btn-outline-light" id="panel-next-btn" aria-label="Next section"><span>Next</span><i class="bi bi-arrow-right"></i></button>
                     </div>
                     <div class="d-grid gap-2" id="control-panel-nav"></div>
                     <div class="panel-nav-empty d-none" id="control-panel-empty">No matching sections found.</div>
@@ -3354,8 +3369,8 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
 
         const sourceContainer = document.getElementById('control-cards-source');
         const sourceCards = sourceContainer
-            ? Array.from(sourceContainer.children).filter(function (el) {
-                return el.classList.contains('panel-section') || el.classList.contains('section-card');
+            ? Array.from(sourceContainer.querySelectorAll('.panel-section, .section-card')).filter(function (el) {
+                return el.id !== 'active-control-panel';
             })
             : [];
         const panelNav = document.getElementById('control-panel-nav');
