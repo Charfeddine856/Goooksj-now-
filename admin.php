@@ -474,15 +474,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (isset($_POST['update_smart_niche_automation'])) {
         $nicheSlug = trim((string)($_POST['smart_active_niche'] ?? ''));
-        if ($nicheSlug !== '') {
-            setSetting('active_niche', $nicheSlug);
+        $validNicheSlug = '';
+        if ($nicheSlug !== '' && class_exists('App\\NicheManager')) {
+            $candidateNiche = \App\NicheManager::getNicheBySlug($nicheSlug);
+            if ($candidateNiche) {
+                $validNicheSlug = (string)($candidateNiche['slug'] ?? '');
+                setSetting('active_niche', $validNicheSlug);
+            }
         }
 
         $enabled = isset($_POST['smart_auto_ai_enabled']) ? 1 : 0;
         $intervalFrom = (int)($_POST['smart_auto_publish_interval_seconds_from'] ?? 1);
         $intervalTo = (int)($_POST['smart_auto_publish_interval_seconds_to'] ?? 10800);
-        $intervalFrom = max(0, min(300000, $intervalFrom));
-        $intervalTo = max(0, min(300000, $intervalTo));
+        $intervalFrom = max(1, min(300000, $intervalFrom));
+        $intervalTo = max(1, min(300000, $intervalTo));
         if ($intervalTo < $intervalFrom) {
             [$intervalFrom, $intervalTo] = [$intervalTo, $intervalFrom];
         }
@@ -499,8 +504,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         setSetting('auto_publish_interval_seconds', (string)$interval);
         setSetting('auto_title_mode', $mode);
 
-        $_SESSION['flash_message'] = 'Smart automation hub updated (niche + scheduler + title mode).';
-        $_SESSION['flash_type'] = 'success';
+        $smartMsg = 'Smart automation hub updated (niche + scheduler + title mode).';
+        $smartFlashType = 'success';
+        if ($nicheSlug !== '' && $validNicheSlug === '') {
+            $smartMsg .= ' Niche not found, keeping previous active niche.';
+            $smartFlashType = 'warning';
+        }
+        $_SESSION['flash_message'] = $smartMsg;
+        $_SESSION['flash_type'] = $smartFlashType;
         header('Location: admin.php#auto-scheduler-section');
         exit;
     }
@@ -748,11 +759,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $normalizeSmartUrl = static function ($url) {
             $url = trim((string)$url);
             if ($url === '') return '';
+            if (!preg_match('#^https?://#i', $url)) {
+                $url = 'https://' . ltrim($url, '/');
+            }
             $parts = parse_url($url);
-            if (!is_array($parts)) return $url;
+            if (!is_array($parts)) return '';
             $scheme = strtolower((string)($parts['scheme'] ?? ''));
             $host = strtolower((string)($parts['host'] ?? ''));
+            if (!in_array($scheme, ['http', 'https'], true) || $host === '') return '';
             $port = isset($parts['port']) ? ':' . (int)$parts['port'] : '';
+            if (!empty($parts['user']) || !empty($parts['pass'])) return '';
             $path = (string)($parts['path'] ?? '/');
             if ($path === '') $path = '/';
             if ($path !== '/') $path = rtrim($path, '/');
@@ -1910,6 +1926,27 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
         #auto-scheduler-section .form-label {
             color: #ff4d4f !important;
         }
+        #auto-scheduler-section {
+            border: 1px solid rgba(250, 204, 21, 0.35);
+            box-shadow: 0 14px 34px rgba(0, 0, 0, 0.25);
+        }
+        #auto-scheduler-section .smart-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+        #auto-scheduler-section .smart-pill {
+            border: 1px solid rgba(250, 204, 21, 0.55);
+            border-radius: 999px;
+            padding: 0.2rem 0.65rem;
+            font-size: 0.78rem;
+            color: #fde68a;
+            background: rgba(250, 204, 21, 0.1);
+        }
+        #auto-scheduler-section .niche-details-toggle {
+            min-width: 118px;
+        }
         @media (max-width: 991.98px) {
             .dashboard-sidebar {
                 position: static;
@@ -2320,6 +2357,12 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
                 <div class="card-body">
                     <h5 class="text-danger"><i class="bi bi-robot"></i> Smart Niche Automation Hub <span class="badge text-bg-dark ms-2">Pro</span></h5>
                     <p class="text-secondary mb-3">دمج ذكي بين <strong>AI Auto Publish Scheduler</strong> و <strong>Niche Management</strong> و <strong>Auto Title Generator Controls</strong> و <strong>Source Intake</strong> في لوحة واحدة لإدارة أسرع وأوضح.</p>
+                    <div class="smart-toolbar">
+                        <span class="smart-pill"><i class="bi bi-diagram-3"></i> Niches: <?= count($nichesList) ?></span>
+                        <span class="smart-pill"><i class="bi bi-clock-history"></i> Interval: <?= (int)$autoPublishIntervalFrom ?> - <?= (int)$autoPublishIntervalTo ?>s</span>
+                        <span class="smart-pill"><i class="bi bi-cpu"></i> Mode: <?= e(strtoupper($autoTitleMode)) ?></span>
+                        <span class="smart-pill"><i class="bi bi-lightning-charge"></i> Scheduler: <?= $autoAiEnabled ? 'ON' : 'OFF' ?></span>
+                    </div>
                     <form method="post" class="row g-2 align-items-end mb-3">
                         <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
                         <div class="col-md-4">
@@ -2450,6 +2493,7 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
                                         <div class="small text-secondary"><?= e($n['slug']) ?> — <?= e($n['description']) ?></div>
                                     </div>
                                     <div class="text-end">
+                                        <button class="btn btn-sm btn-outline-secondary me-1 niche-details-toggle" type="button" data-bs-toggle="collapse" data-bs-target="#niche-details-<?= (int)$n['id'] ?>" aria-expanded="false" aria-controls="niche-details-<?= (int)$n['id'] ?>">Show Fields</button>
                                         <form method="post" onsubmit="return confirm('Delete this niche?');" class="d-inline">
                                             <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
                                             <input type="hidden" name="niche_id" value="<?= (int)$n['id'] ?>">
@@ -2463,7 +2507,8 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
                                     $srcStmt->execute([(int)$n['id']]);
                                     $sources = $srcStmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
                                 ?>
-                                <div class="mt-2 small">
+                                <div class="collapse mt-2" id="niche-details-<?= (int)$n['id'] ?>">
+                                <div class="small">
                                     <?php if (empty($sources)): ?>
                                         <em class="text-secondary">No sources configured.</em>
                                     <?php else: ?>
@@ -2516,6 +2561,7 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
                                     <div class="col-12">
                                         <small class="text-secondary">لكل نيش قائمة مستقلة بالكامل للمصادر. يمكنك لصق قائمة روابط كاملة وسيتم استبدالها دفعة واحدة.</small>
                                     </div>
+                                </form>
                                 <form method="post" class="row g-2 mt-3 border-top pt-2">
                                     <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
                                     <input type="hidden" name="niche_title_slug" value="<?= e($n['slug']) ?>">
@@ -2551,6 +2597,7 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
                                         <button name="save_niche_title_pack" value="1" class="btn btn-outline-info w-100">Save Niche Title/Keywords Pack</button>
                                     </div>
                                 </form>
+                                </div>
                             </div>
                         <?php endforeach; ?>
                     </div>
@@ -3281,6 +3328,23 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
         }
     }
     document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.niche-details-toggle').forEach(function (btn) {
+            const targetSel = btn.getAttribute('data-bs-target');
+            if (!targetSel) return;
+            const target = document.querySelector(targetSel);
+            if (!target) return;
+            const refreshLabel = function () {
+                const isOpen = target.classList.contains('show');
+                btn.textContent = isOpen ? 'Hide Fields' : 'Show Fields';
+                btn.classList.toggle('btn-outline-secondary', !isOpen);
+                btn.classList.toggle('btn-outline-warning', isOpen);
+                btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+            };
+            target.addEventListener('shown.bs.collapse', refreshLabel);
+            target.addEventListener('hidden.bs.collapse', refreshLabel);
+            refreshLabel();
+        });
+
         const sourceCards = Array.from(document.querySelectorAll('#control-cards-source .section-card'));
         const panelNav = document.getElementById('control-panel-nav');
         const panelSearch = document.getElementById('control-panel-search');
