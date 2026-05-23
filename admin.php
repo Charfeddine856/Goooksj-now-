@@ -3410,11 +3410,25 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
         });
 
         const sourceContainer = document.getElementById('control-cards-source');
-        const sourceCards = sourceContainer
-            ? Array.from(sourceContainer.querySelectorAll('.panel-section, .section-card')).filter(function (el) {
-                return el.id !== 'active-control-panel';
-            })
-            : [];
+        const sourceCards = (function () {
+            const dedupe = function (cards) {
+                const seen = new Set();
+                return cards.filter(function (card) {
+                    if (!card || seen.has(card)) return false;
+                    seen.add(card);
+                    return true;
+                });
+            };
+
+            if (sourceContainer) {
+                const scopedCards = dedupe(Array.from(sourceContainer.querySelectorAll('.panel-section')));
+                if (scopedCards.length) {
+                    return scopedCards;
+                }
+            }
+
+            return dedupe(Array.from(document.querySelectorAll('.panel-section')));
+        })();
         const panelNav = document.getElementById('control-panel-nav');
         const panelSearch = document.getElementById('control-panel-search');
         const activeSectionLabel = document.getElementById('active-section-label');
@@ -3430,6 +3444,7 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
         }
 
         function getVisibleButtons() {
+            if (!panelNav) return [];
             return Array.from(panelNav.querySelectorAll('button')).filter(function (btn) {
                 return !btn.classList.contains('d-none');
             });
@@ -3509,7 +3524,7 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
         if (!sourceCards.length) {
             if (sourceContainer) {
                 sourceContainer.classList.remove('d-none');
-                sourceContainer.querySelectorAll('.panel-section, .section-card').forEach(function (card) {
+                sourceCards.forEach(function (card) {
                     card.style.display = 'block';
                 });
             }
