@@ -3410,11 +3410,35 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
         });
 
         const sourceContainer = document.getElementById('control-cards-source');
-        const sourceCards = sourceContainer
-            ? Array.from(sourceContainer.querySelectorAll('.panel-section, .section-card')).filter(function (el) {
-                return el.id !== 'active-control-panel';
-            })
-            : [];
+        const sourceCards = (function () {
+            const normalizeCards = function (cards) {
+                const seen = new Set();
+                return cards.filter(function (card) {
+                    if (!(card instanceof HTMLElement)) return false;
+                    if (seen.has(card)) return false;
+                    if (card.id === 'active-control-panel') return false;
+                    if (card.classList.contains('dashboard-sidebar')) return false;
+                    if (!card.querySelector('h5')) return false;
+                    seen.add(card);
+                    return true;
+                });
+            };
+
+            if (sourceContainer) {
+                const scopedCards = normalizeCards(Array.from(sourceContainer.querySelectorAll('.panel-section, .section-card')));
+                if (scopedCards.length) {
+                    return scopedCards;
+                }
+
+                const directCards = normalizeCards(Array.from(sourceContainer.children));
+                if (directCards.length) {
+                    return directCards;
+                }
+            }
+
+            const globalCards = normalizeCards(Array.from(document.querySelectorAll('.panel-section, #control-cards-source .section-card')));
+            return globalCards;
+        })();
         const panelNav = document.getElementById('control-panel-nav');
         const panelSearch = document.getElementById('control-panel-search');
         const activeSectionLabel = document.getElementById('active-section-label');
@@ -3430,6 +3454,7 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
         }
 
         function getVisibleButtons() {
+            if (!panelNav) return [];
             return Array.from(panelNav.querySelectorAll('button')).filter(function (btn) {
                 return !btn.classList.contains('d-none');
             });
@@ -3509,7 +3534,7 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
         if (!sourceCards.length) {
             if (sourceContainer) {
                 sourceContainer.classList.remove('d-none');
-                sourceContainer.querySelectorAll('.panel-section, .section-card').forEach(function (card) {
+                sourceCards.forEach(function (card) {
                     card.style.display = 'block';
                 });
             }
