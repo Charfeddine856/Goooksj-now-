@@ -1768,7 +1768,10 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
     <style>
         body {
             --bs-heading-color: #f8fafc;
-            background: radial-gradient(circle at 15% 10%, #1f6f54 0%, #14532d 45%, #0b2e1f 100%);
+            background:
+                radial-gradient(circle at 12% 8%, rgba(59, 130, 246, 0.22), transparent 46%),
+                radial-gradient(circle at 85% 14%, rgba(168, 85, 247, 0.18), transparent 42%),
+                linear-gradient(155deg, #020617 0%, #0b1120 35%, #111827 100%);
             background-attachment: fixed;
             color: #f8fafc;
         }
@@ -1779,9 +1782,10 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
             color: #cbd5e1 !important;
         }
         .section-card {
-            background: #4a273b;
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: linear-gradient(145deg, rgba(15, 23, 42, 0.96), rgba(17, 24, 39, 0.92));
+            border: 1px solid rgba(148, 163, 184, 0.2);
             overflow-wrap: anywhere;
+            border-radius: 0.95rem;
         }
         .container {
             max-width: 1360px;
@@ -1813,8 +1817,8 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
             border: 1px solid rgba(255, 255, 255, 0.2);
         }
         .mini-analytics {
-            border: 1px solid rgba(249, 115, 22, 0.35);
-            background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(249, 115, 22, 0.2));
+            border: 1px solid rgba(14, 165, 233, 0.35);
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(37, 99, 235, 0.2));
         }
         .mini-analytics .table {
             --bs-table-bg: transparent;
@@ -1845,31 +1849,31 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
             overflow: hidden;
         }
         .dashboard-sidebar .nav-link {
-            color: #ffb4b5;
-            border: 1px solid rgba(248, 113, 113, 0.35);
-            background: rgba(220, 38, 38, 0.08);
+            color: #bfdbfe;
+            border: 1px solid rgba(59, 130, 246, 0.45);
+            background: rgba(59, 130, 246, 0.09);
             margin-bottom: 0.5rem;
             border-radius: 0.6rem;
             transition: all 0.2s ease;
         }
         .dashboard-sidebar .nav-link:hover,
         .dashboard-sidebar .nav-link.active {
-            color: #fff5f5;
-            background: rgba(220, 38, 38, 0.25);
-            border-color: rgba(252, 165, 165, 0.6);
+            color: #eff6ff;
+            background: rgba(37, 99, 235, 0.3);
+            border-color: rgba(147, 197, 253, 0.85);
         }
         .panel-nav-btn {
             text-align: left;
             min-height: 42px;
-            border: 1px solid rgba(248, 113, 113, 0.35);
-            color: #ffb4b5;
-            background: rgba(220, 38, 38, 0.08);
+            border: 1px solid rgba(59, 130, 246, 0.45);
+            color: #bfdbfe;
+            background: rgba(37, 99, 235, 0.1);
         }
         .panel-nav-btn:hover,
         .panel-nav-btn.active {
-            color: #fff5f5;
-            border-color: rgba(252, 165, 165, 0.6);
-            background: rgba(220, 38, 38, 0.25);
+            color: #eff6ff;
+            border-color: rgba(147, 197, 253, 0.85);
+            background: rgba(37, 99, 235, 0.32);
         }
         .panel-nav-btn:focus-visible {
             outline: 2px solid rgba(252, 165, 165, 0.85);
@@ -1929,12 +1933,17 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
         .btn-outline-info,
         .bg-info,
         .text-bg-primary {
-            background-color: #dc2626 !important;
-            border-color: #f87171 !important;
+            background-color: #2563eb !important;
+            border-color: #60a5fa !important;
             color: #fff !important;
         }
         .progress-bar.bg-info {
-            background-color: #ef4444 !important;
+            background-color: #38bdf8 !important;
+        }
+        .admin-hero {
+            border: 1px solid rgba(96, 165, 250, 0.35);
+            background: linear-gradient(130deg, rgba(30, 64, 175, 0.35), rgba(15, 23, 42, 0.95));
+            border-radius: 1rem;
         }
         .ads-preview .inline-ad-unit {
             margin: 0;
@@ -2047,17 +2056,20 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
 <!-- تنبيه تفاعلي أعلى الصفحة -->
 <div id="top-alert" class="alert alert-info text-center" role="alert" style="display:none;"></div>
 <div class="container py-4 py-lg-5">
-    <div class="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-3 mb-4">
-        <div>
-            <h1 class="mb-1"><i class="bi bi-speedometer2"></i> <?= e($siteTitle) ?> Control Panel</h1>
-            <p class="text-secondary mb-0">Manage article generation, RSS/normal sources, and publishing workflow.</p>
-        </div>
-        <div class="d-flex gap-2">
-            <a href="index.php" class="btn btn-outline-light" target="_blank"><i class="bi bi-box-arrow-up-right"></i> Public Site</a>
-            <form method="post" class="mb-0">
-                <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
-                <button class="btn btn-danger" name="logout" value="1"><i class="bi bi-box-arrow-right"></i> Logout</button>
-            </form>
+    <div class="admin-hero p-4 p-lg-4 mb-4 shadow-lg">
+        <div class="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-3">
+            <div>
+                <span class="badge text-bg-primary mb-2 px-3 py-2"><i class="bi bi-stars"></i> Admin v2</span>
+                <h1 class="mb-1"><i class="bi bi-speedometer2"></i> <?= e($siteTitle) ?> Control Center</h1>
+                <p class="text-secondary mb-0">A fully refreshed admin experience for content, workflows, automation, and publishing controls.</p>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="index.php" class="btn btn-outline-light" target="_blank"><i class="bi bi-box-arrow-up-right"></i> Open Public Site</a>
+                <form method="post" class="mb-0">
+                    <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
+                    <button class="btn btn-danger" name="logout" value="1"><i class="bi bi-box-arrow-right"></i> Logout</button>
+                </form>
+            </div>
         </div>
     </div>
 
@@ -2164,9 +2176,9 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
         <aside class="col-lg-3">
             <div class="card section-card dashboard-sidebar">
                 <div class="card-body">
-                    <h5 class="mb-3"><i class="bi bi-layout-sidebar"></i> Dashboard Sections</h5>
+                    <h5 class="mb-3"><i class="bi bi-layout-sidebar"></i> Navigation Hub</h5>
                     <hr class="border-secondary-subtle my-3">
-                    <h6 class="mb-2"><i class="bi bi-ui-checks-grid"></i> Control Buttons</h6>
+                    <h6 class="mb-2"><i class="bi bi-ui-checks-grid"></i> Quick Section Switcher</h6>
                     <input type="search" id="control-panel-search" class="form-control form-control-sm mb-2" placeholder="Search sections..." aria-label="Search dashboard sections">
                     <span class="section-counter" id="section-counter">0/0 sections</span>
                     <small class="d-block text-secondary mb-2" id="active-section-label">Active: —</small>
