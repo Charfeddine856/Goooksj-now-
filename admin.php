@@ -3352,7 +3352,9 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
             refreshLabel();
         });
 
-        const sourceCards = Array.from(document.querySelectorAll('#control-cards-source .section-card'));
+        const sourceCards = Array.from(document.querySelectorAll('#control-cards-source .panel-section, #control-cards-source .section-card')).filter(function (card, idx, arr) {
+            return arr.indexOf(card) === idx;
+        });
         const panelNav = document.getElementById('control-panel-nav');
         const panelSearch = document.getElementById('control-panel-search');
         const activeSectionLabel = document.getElementById('active-section-label');
@@ -3437,6 +3439,21 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
 
             const nextVisibleIndex = (currentVisibleIndex + direction + visibleButtons.length) % visibleButtons.length;
             renderPanel(Number(visibleButtons[nextVisibleIndex].dataset.index));
+        }
+
+
+        if (!sourceCards.length) {
+            const sourceContainer = document.getElementById('control-cards-source');
+            if (sourceContainer) {
+                sourceContainer.classList.remove('d-none');
+                sourceContainer.querySelectorAll('.panel-section').forEach(function (card) {
+                    card.style.display = 'block';
+                });
+            }
+            if (emptyState) {
+                emptyState.classList.remove('d-none');
+                emptyState.textContent = 'No sections available right now. Please refresh the page.';
+            }
         }
 
         if (panelNav && activePanel && sourceCards.length) {
