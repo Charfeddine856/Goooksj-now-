@@ -2376,26 +2376,38 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
                                     <div class="col-12">
                                         <small class="text-secondary">لكل نيش قائمة مستقلة بالكامل للمصادر. يمكنك لصق قائمة روابط كاملة وسيتم استبدالها دفعة واحدة.</small>
                                     </div>
+                                </form>
                                 <form method="post" class="row g-2 mt-3 border-top pt-2">
                                     <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
                                     <input type="hidden" name="niche_title_slug" value="<?= e($n['slug']) ?>">
+                                    <?php
+                                        $nichePrefix = 'niche.' . $n['slug'] . '.';
+                                        $nicheModeValue = (string)getSetting($nichePrefix . 'auto_title_mode', 'template');
+                                        $nicheFixedTitlesValue = (string)getSetting($nichePrefix . 'auto_title_fixed_titles', '');
+                                        $nicheBrandsValue = (string)getSetting($nichePrefix . 'auto_title_brands', '');
+                                        $nicheModelsValue = (string)getSetting($nichePrefix . 'auto_title_models', '');
+                                        $nicheModifiersValue = (string)getSetting($nichePrefix . 'auto_title_modifiers', '');
+                                        $nicheAudiencesValue = (string)getSetting($nichePrefix . 'auto_title_audiences', '');
+                                        $nicheAnglesValue = (string)getSetting($nichePrefix . 'auto_title_angles', '');
+                                        $nicheTemplatesValue = (string)getSetting($nichePrefix . 'auto_title_templates', '');
+                                    ?>
                                     <div class="col-md-2">
                                         <select name="niche_auto_title_mode" class="form-select">
-                                            <option value="template">Template</option>
-                                            <option value="list">Fixed List</option>
+                                            <option value="template" <?= $nicheModeValue === 'template' ? 'selected' : '' ?>>Template</option>
+                                            <option value="list" <?= $nicheModeValue === 'list' ? 'selected' : '' ?>>Fixed List</option>
                                         </select>
                                     </div>
                                     <div class="col-md-5">
-                                        <textarea name="niche_fixed_titles" class="form-control" rows="2" placeholder="Paste niche titles (one per line)"></textarea>
+                                        <textarea name="niche_fixed_titles" class="form-control" rows="2" placeholder="Paste niche titles (one per line)"><?= e($nicheFixedTitlesValue) ?></textarea>
                                     </div>
                                     <div class="col-md-5">
-                                        <textarea name="niche_brands" class="form-control" rows="2" placeholder="Paste niche keywords/brands (one per line)"></textarea>
+                                        <textarea name="niche_brands" class="form-control" rows="2" placeholder="Paste niche keywords/brands (one per line)"><?= e($nicheBrandsValue) ?></textarea>
                                     </div>
-                                    <div class="col-md-6"><textarea name="niche_models" class="form-control" rows="2" placeholder="Models / topics list"></textarea></div>
-                                    <div class="col-md-6"><textarea name="niche_modifiers" class="form-control" rows="2" placeholder="Modifiers e.g. guide, review"></textarea></div>
-                                    <div class="col-md-6"><textarea name="niche_audiences" class="form-control" rows="2" placeholder="Audience list"></textarea></div>
-                                    <div class="col-md-6"><textarea name="niche_angles" class="form-control" rows="2" placeholder="Angles list"></textarea></div>
-                                    <div class="col-12"><textarea name="niche_templates" class="form-control" rows="2" placeholder="Title templates with {year} {brand} {model} {modifier} {angle} {audience}"></textarea></div>
+                                    <div class="col-md-6"><textarea name="niche_models" class="form-control" rows="2" placeholder="Models / topics list"><?= e($nicheModelsValue) ?></textarea></div>
+                                    <div class="col-md-6"><textarea name="niche_modifiers" class="form-control" rows="2" placeholder="Modifiers e.g. guide, review"><?= e($nicheModifiersValue) ?></textarea></div>
+                                    <div class="col-md-6"><textarea name="niche_audiences" class="form-control" rows="2" placeholder="Audience list"><?= e($nicheAudiencesValue) ?></textarea></div>
+                                    <div class="col-md-6"><textarea name="niche_angles" class="form-control" rows="2" placeholder="Angles list"><?= e($nicheAnglesValue) ?></textarea></div>
+                                    <div class="col-12"><textarea name="niche_templates" class="form-control" rows="2" placeholder="Title templates with {year} {brand} {model} {modifier} {angle} {audience}"><?= e($nicheTemplatesValue) ?></textarea></div>
                                     <div class="col-12">
                                         <button name="save_niche_title_pack" value="1" class="btn btn-outline-info w-100">Save Niche Title/Keywords Pack</button>
                                     </div>
