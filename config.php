@@ -67,20 +67,180 @@ foreach ($defaultNiches as [$slug, $name, $description]) {
 
 $defaultNicheSources = [
     'general' => [
-        'rss' => ['https://www.caranddriver.com/rss/all.xml'],
+        'rss' => [
+            'https://www.caranddriver.com/rss/all.xml',
+            'https://www.autoblog.com/rss.xml',
+            'https://www.motortrend.com/feeds/all/',
+            'https://www.thetruthaboutcars.com/feed/',
+            'https://www.carscoops.com/feed/',
+            'https://www.autocar.co.uk/rss',
+            'https://www.topgear.com/car-news/rss.xml',
+            'https://www.carmagazine.co.uk/rss/',
+            'https://www.roadandtrack.com/rss/all.xml',
+            'https://www.thedrive.com/rss/all',
+            'https://jalopnik.com/rss',
+            'https://www.autoevolution.com/rss.xml',
+            'https://www.cars.com/news/rss/',
+            'https://www.edmunds.com/feeds/rss/reviews.xml',
+            'https://www.whichcar.com.au/rss.xml'
+        ],
         'web' => ['https://www.autoblog.com/news/'],
     ],
     'ev' => [
-        'rss' => ['https://insideevs.com/rss'],
-        'web' => ['https://insideevs.com/news/'],
+        'rss' => [
+            'https://insideevs.com/rss',
+            'https://electrek.co/feed/',
+            'https://cleantechnica.com/tag/electric-vehicles/feed/',
+            'https://evannex.com/blogs/news.atom',
+            'https://chargedevs.com/feed/',
+            'https://www.greencarreports.com/rss',
+            'https://www.teslarati.com/feed/',
+            'https://www.ev-database.org/rss',
+            'https://www.autocar.co.uk/car-news/electric-cars/rss',
+            'https://www.carscoops.com/tag/electric-cars/feed/',
+            'https://electrive.com/feed/',
+            'https://evmagz.com/feed/',
+            'https://pluginamerica.org/blog/feed/',
+            'https://chargedevs.com/newswire/feed/',
+            'https://www.energy.gov/eere/electricvehicles/rss.xml'
+        ],
+        'web' => [
+            'https://insideevs.com/news/',
+            'https://electrek.co/',
+            'https://www.greencarreports.com/news',
+            'https://www.teslarati.com/',
+            'https://www.autocar.co.uk/car-news/electric-cars',
+            'https://www.carscoops.com/tag/electric-cars/',
+            'https://cleantechnica.com/tag/electric-vehicles/',
+            'https://chargedevs.com/newswire/',
+            'https://electrive.com/',
+            'https://evmagz.com/'
+        ],
     ],
     'motorcycles' => [
-        'rss' => ['https://www.motorcyclenews.com/rss/'],
-        'web' => [],
+        'rss' => [
+            'https://www.motorcyclenews.com/rss/',
+            'https://www.visordown.com/rss.xml',
+            'https://www.rideapart.com/rss/',
+            'https://www.cycleworld.com/arc/outboundfeeds/rss/',
+            'https://www.motorcycle.com/feeds/all/',
+            'https://www.bennetts.co.uk/bikesocial/rss',
+            'https://www.advrider.com/feed/',
+            'https://www.revzilla.com/common-tread/rss',
+            'https://www.webbikeworld.com/feed/',
+            'https://www.motousher.com/feed/',
+            'https://www.motorcyclecruiser.com/feed/',
+            'https://www.advpulse.com/feed/',
+            'https://www.bikeexif.com/feed',
+            'https://www.returnofthecaferacers.com/feed/',
+            'https://www.totalmotorcycle.com/feed/'
+        ],
+        'web' => [
+            'https://www.motorcyclenews.com/news/',
+            'https://www.visordown.com/news',
+            'https://www.rideapart.com/news/',
+            'https://www.cycleworld.com/motorcycle-news/',
+            'https://www.motorcycle.com/news',
+            'https://www.bennetts.co.uk/bikesocial/news-and-views',
+            'https://www.advrider.com/f/',
+            'https://www.revzilla.com/common-tread',
+            'https://www.webbikeworld.com/',
+            'https://www.advpulse.com/'
+        ],
     ],
-    'auto-mobile' => ['rss' => [], 'web' => []],
-    'cuisine' => ['rss' => [], 'web' => []],
-    'eran-money' => ['rss' => [], 'web' => []],
+    'auto-mobile' => [
+        'rss' => [
+            'https://www.autonews.com/section/rss',
+            'https://www.carwow.co.uk/blog/rss.xml',
+            'https://www.whatcar.com/news/rss',
+            'https://www.driving.co.uk/feed/',
+            'https://www.carsguide.com.au/news/rss',
+            'https://www.autoexpress.co.uk/rss.xml',
+            'https://www.cnet.com/roadshow/news/rss/',
+            'https://www.arenaev.com/rss-news-reviews.php3',
+            'https://www.techradar.com/rss/news/car-tech',
+            'https://www.wired.com/feed/tag/transport/latest/rss',
+            'https://www.theverge.com/rss/transportation/index.xml',
+            'https://www.engadget.com/transportation/rss.xml',
+            'https://www.digitaltrends.com/cars/feed/',
+            'https://arstechnica.com/cars/feed/',
+            'https://www.zdnet.com/topic/transportation/rss.xml'
+        ],
+        'web' => [
+            'https://www.autonews.com/',
+            'https://www.carwow.co.uk/news',
+            'https://www.whatcar.com/news',
+            'https://www.autoexpress.co.uk/car-news',
+            'https://www.carsguide.com.au/car-news',
+            'https://www.cnet.com/roadshow/',
+            'https://www.digitaltrends.com/cars/',
+            'https://www.theverge.com/transportation',
+            'https://arstechnica.com/cars/',
+            'https://www.techradar.com/news/car-tech'
+        ]
+    ],
+    'cuisine' => [
+        'rss' => [
+            'https://www.seriouseats.com/rss',
+            'https://www.bonappetit.com/feed/rss',
+            'https://www.epicurious.com/services/rss/feeds/all',
+            'https://www.foodnetwork.com/content/food-com/en/rss/all-content.rss',
+            'https://www.simplyrecipes.com/feed/',
+            'https://www.delish.com/rss/all.xml',
+            'https://www.thekitchn.com/rss',
+            'https://minimalistbaker.com/feed/',
+            'https://cookieandkate.com/feed/',
+            'https://www.smittenkitchen.com/feed/',
+            'https://www.foodandwine.com/feed',
+            'https://www.allrecipes.com/feed/',
+            'https://www.loveandlemons.com/feed/',
+            'https://www.feastingathome.com/feed/',
+            'https://www.halfbakedharvest.com/feed/'
+        ],
+        'web' => [
+            'https://www.seriouseats.com/',
+            'https://www.bonappetit.com/',
+            'https://www.epicurious.com/',
+            'https://www.foodnetwork.com/',
+            'https://www.simplyrecipes.com/',
+            'https://www.delish.com/',
+            'https://www.thekitchn.com/',
+            'https://minimalistbaker.com/',
+            'https://cookieandkate.com/',
+            'https://www.foodandwine.com/'
+        ]
+    ],
+    'eran-money' => [
+        'rss' => [
+            'https://www.investopedia.com/feedbuilder/feed/getfeed?feedName=rss_articles',
+            'https://www.nerdwallet.com/blog/feed/',
+            'https://www.marketwatch.com/rss/topstories',
+            'https://www.cnbc.com/id/100003114/device/rss/rss.html',
+            'https://www.ft.com/?format=rss',
+            'https://www.economist.com/finance-and-economics/rss.xml',
+            'https://www.fool.com/feeds/index.aspx',
+            'https://www.kiplinger.com/rss.xml',
+            'https://www.moneycrashers.com/feed/',
+            'https://www.businessinsider.com/rss',
+            'https://www.wsj.com/xml/rss/3_7031.xml',
+            'https://www.bloomberg.com/feed/podcast/etf-report.xml',
+            'https://feeds.a.dj.com/rss/RSSMarketsMain.xml',
+            'https://www.forbes.com/money/feed/',
+            'https://www.morningstar.com/feeds/rss/articles'
+        ],
+        'web' => [
+            'https://www.investopedia.com/',
+            'https://www.nerdwallet.com/',
+            'https://www.marketwatch.com/',
+            'https://www.cnbc.com/personal-finance/',
+            'https://www.ft.com/markets',
+            'https://www.economist.com/finance-and-economics',
+            'https://www.fool.com/',
+            'https://www.kiplinger.com/',
+            'https://www.moneycrashers.com/',
+            'https://www.forbes.com/money/'
+        ]
+    ],
 ];
 $getNicheIdStmt = $pdo->prepare("SELECT id FROM niches WHERE slug = ? LIMIT 1");
 $insertNicheSourceStmt = $pdo->prepare("INSERT OR IGNORE INTO niche_sources (niche_id, type, url) VALUES (?, ?, ?)");
@@ -96,7 +256,141 @@ foreach ($defaultNicheSources as $slug => $groups) {
 }
 
 $nicheAutoTitleDefaults = [
+    'general' => [
+        'auto_title_fixed_titles' => "Best Cars for Daily Driving in {year}
+Top Family SUVs Worth Buying in {year}
+Sedan vs SUV: Which One Fits You in {year}
+Most Reliable Used Cars Guide for {year}
+New Car Buying Checklist for First-Time Buyers",
+        'auto_title_brands' => "Toyota
+Honda
+Ford
+Chevrolet
+Nissan
+BMW
+Mercedes-Benz
+Audi
+Kia
+Hyundai",
+        'auto_title_models' => "Sedan
+SUV
+Crossover
+Truck
+Hybrid
+Electric Car
+Luxury Sedan
+Family SUV
+Compact Car
+Sports Car",
+        'auto_title_modifiers' => "Review
+Buying Guide
+Specs Breakdown
+Comparison
+Ownership Cost",
+        'auto_title_audiences' => "First-Time Buyers
+Family Drivers
+Commuters
+Performance Enthusiasts
+Budget Shoppers",
+        'auto_title_angles' => "Real-World Performance
+Fuel Economy Insights
+Safety and Technology
+Maintenance Planning
+Value for Money",
+        'auto_title_templates' => "{year} {brand} {model} {modifier}: {angle} for {audience}",
+    ],
+    'ev' => [
+        'auto_title_fixed_titles' => "Best Electric SUVs with Long Range in {year}
+Home EV Charging Setup Guide for Beginners
+EV Battery Health Tips That Actually Work
+Fast Charging Comparison: Which EV Wins in {year}
+Used EV Buying Checklist for Smart Buyers",
+        'auto_title_brands' => "Tesla
+BYD
+Hyundai
+Kia
+BMW
+Mercedes-EQ
+Rivian
+Lucid
+Volkswagen
+Volvo",
+        'auto_title_models' => "Electric Sedan
+Electric SUV
+Long-Range EV
+City EV
+Premium EV
+Charging Setup
+Battery Health Plan
+Home Charging Guide
+Fleet EV
+Used EV",
+        'auto_title_modifiers' => "Review
+Charging Guide
+Range Test
+Comparison
+Ownership Guide",
+        'auto_title_audiences' => "EV Beginners
+Daily Commuters
+Road Trip Drivers
+Fleet Managers
+Tech-Savvy Buyers",
+        'auto_title_angles' => "Charging Speed and Network
+Range in Real Conditions
+Battery Longevity
+Software and Smart Features
+Total Ownership Cost",
+        'auto_title_templates' => "{year} {brand} {model} {modifier}: {angle} for {audience}",
+    ],
+    'motorcycles' => [
+        'auto_title_fixed_titles' => "Best Beginner Motorcycles to Buy in {year}
+Adventure Bike Comparison for Long Rides
+Motorcycle Safety Gear Checklist for New Riders
+City Commuter Bikes with Best Fuel Economy
+Sport Bike vs Naked Bike: Complete {year} Guide",
+        'auto_title_brands' => "Honda
+Yamaha
+Kawasaki
+Suzuki
+Ducati
+BMW Motorrad
+KTM
+Triumph
+Harley-Davidson
+Royal Enfield",
+        'auto_title_models' => "Sport Bike
+Adventure Bike
+Naked Bike
+Touring Bike
+Cruiser
+Scooter
+Beginner Bike
+Commuter Bike
+Dual-Sport
+Retro Bike",
+        'auto_title_modifiers' => "Review
+Riding Guide
+Comparison
+Maintenance Plan
+Buying Checklist",
+        'auto_title_audiences' => "New Riders
+Daily Riders
+Weekend Riders
+Long-Distance Riders
+City Commuters",
+        'auto_title_angles' => "Comfort and Ergonomics
+Engine and Performance
+Fuel Efficiency
+Safety Gear Setup
+Maintenance and Reliability",
+        'auto_title_templates' => "{year} {brand} {model} {modifier}: {angle} for {audience}",
+    ],
     'auto-mobile' => [
+        'auto_title_fixed_titles' => "Top Car Tech Features You Should Use in {year}
+Connected Car Apps That Improve Daily Driving
+Smart Mobility Trends Reshaping Transportation
+Best In-Car Infotainment Systems Compared
+Vehicle Safety Tech Explained for Everyday Drivers",
         'auto_title_brands' => "Toyota
 Honda
 Hyundai
@@ -130,6 +424,11 @@ Maintenance and Ownership Cost",
         'auto_title_templates' => "{year} {brand} {model} {modifier}: {angle} for {audience}",
     ],
     'cuisine' => [
+        'auto_title_fixed_titles' => "Easy Weeknight Dinner Plan for Busy Families
+Healthy Meal Prep Guide for Beginners
+Budget-Friendly Recipes You Can Cook Fast
+Best Comfort Food Recipes to Try This Week
+Step-by-Step Home Cooking Guide for New Cooks",
         'auto_title_brands' => "Italian
 French
 Japanese
@@ -158,6 +457,11 @@ Budget-Friendly Plan",
         'auto_title_templates' => "{year} {brand} {model} {modifier}: {angle} for {audience}",
     ],
     'eran-money' => [
+        'auto_title_fixed_titles' => "Simple Budget Plan to Save More Every Month
+Beginner Investing Roadmap for Long-Term Growth
+Debt Payoff Strategy That Works in {year}
+Side Hustle Ideas to Increase Monthly Income
+Personal Finance Checklist for Financial Stability",
         'auto_title_brands' => "Personal Finance
 Investing
 Freelancing
