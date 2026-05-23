@@ -13,7 +13,9 @@ $_SESSION['login_lock_until'] = (int)($_SESSION['login_lock_until'] ?? 0);
 $isLocked = $_SESSION['login_lock_until'] > $now;
 $remainingLockSeconds = max(0, $_SESSION['login_lock_until'] - $now);
 
-if (!isset($_SESSION['logged']) && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['pass'])) {
+$requestMethod = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+
+if (!isset($_SESSION['logged']) && $requestMethod === 'POST' && isset($_POST['pass'])) {
     $submittedPassword = (string)($_POST['pass'] ?? '');
 
     if ($isLocked) {
@@ -100,7 +102,7 @@ if (!isset($_SESSION['flash_message'])) {
     $_SESSION['flash_type'] = 'info';
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if ($requestMethod === 'POST') {
     if (!verifyCsrfToken($_POST['csrf_token'] ?? '')) {
         $_SESSION['flash_message'] = 'Invalid security token. Please refresh and try again.';
         $_SESSION['flash_type'] = 'danger';
@@ -1495,6 +1497,27 @@ if ($webSearch !== '') {
 }
 $webSql .= " ORDER BY id DESC";
 // Niche management POST handlers
+
+    if (isset($_POST['publish_multi_niches'])) {
+        $selectedNiches = $_POST['multi_niches'] ?? [];
+        $count = 0;
+        foreach ($selectedNiches as $nicheSlug) {
+            $nicheSlug = trim((string)$nicheSlug);
+            if ($nicheSlug === '') {
+                continue;
+            }
+            setSetting('active_niche', $nicheSlug);
+            $result = publishAutoArticleBySchedule(true);
+            if (($result['published'] ?? 0) === 1) {
+                $count++;
+            }
+        }
+        $_SESSION['flash_message'] = "تم النشر في {$count} نيش.";
+        $_SESSION['flash_type'] = 'success';
+        header('Location: admin.php');
+        exit;
+    }
+
     if (isset($_POST['create_niche'])) {
         $rawSlug = trim((string)($_POST['niche_slug'] ?? ''));
         $name = trim((string)($_POST['niche_name'] ?? ''));
@@ -2429,23 +2452,7 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
                         </div>
                     </form>
 
-                    <?php
-                    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['publish_multi_niches'])) {
-                        $selectedNiches = $_POST['multi_niches'] ?? [];
-                        $count = 0;
-                        foreach ($selectedNiches as $nicheSlug) {
-                            setSetting('active_niche', $nicheSlug);
-                            $result = publishAutoArticleBySchedule(true);
-                            if (($result['published'] ?? 0) === 1) {
-                                $count++;
-                            }
-                        }
-                        $_SESSION['flash_message'] = "تم النشر في {$count} نيش.";
-                        $_SESSION['flash_type'] = 'success';
-                        header('Location: admin.php');
-                        exit;
-                    }
-                    ?>
+                    
 
                     <form method="post" class="row g-2 mb-3">
                         <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
