@@ -2445,7 +2445,7 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
                 </div>
             </div>
 
-            <div class="card section-card mb-3" id="auto-scheduler-section">
+            <div class="card section-card mb-3 panel-section" id="auto-scheduler-section" style="display:none;">
                 <div class="card-body">
                     <h5 class="text-danger"><i class="bi bi-robot"></i> Smart Niche Automation Hub <span class="badge text-bg-dark ms-2">Pro</span></h5>
                     <p class="text-secondary mb-3">دمج ذكي بين <strong>AI Auto Publish Scheduler</strong> و <strong>Niche Management</strong> و <strong>Auto Title Generator Controls</strong> و <strong>Source Intake</strong> في لوحة واحدة لإدارة أسرع وأوضح.</p>
@@ -2715,7 +2715,7 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
                 </div>
             </div>
 
-            <div class="card section-card mb-3" id="pipeline-config-section">
+            <div class="card section-card mb-3 panel-section" id="pipeline-config-section" style="display:none;">
                 <div class="card-body">
                     <h5 class="text-danger"><i class="bi bi-cpu"></i> Core Pipeline Config</h5>
                     <form method="post" class="row g-2 align-items-end">
@@ -2947,7 +2947,7 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
                 </div>
             </div>
 
-            <div class="card section-card mb-3" id="admin-password-settings">
+            <div class="card section-card mb-3 panel-section" id="admin-password-settings" style="display:none;">
                 <div class="card-body">
                     <h5><i class="bi bi-key"></i> Change Admin Password</h5>
                     <form method="post" class="row g-2">
@@ -2992,7 +2992,7 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
                 </div>
             </div>
 
-            <div class="card section-card mb-3" id="sources-management">
+            <div class="card section-card mb-3 panel-section" id="sources-management" style="display:none;">
                 <div class="card-body">
                     <h5><i class="bi bi-pencil-square"></i> Add Titles Manually</h5>
                     <form method="post">
