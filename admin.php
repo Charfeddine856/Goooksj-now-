@@ -3423,33 +3423,34 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
 
         const sourceContainer = document.getElementById('control-cards-source');
         const sourceCards = (function () {
-            const normalizeCards = function (cards) {
-                const seen = new Set();
-                return cards.filter(function (card) {
-                    if (!(card instanceof HTMLElement)) return false;
-                    if (seen.has(card)) return false;
-                    if (card.id === 'active-control-panel') return false;
-                    if (card.classList.contains('dashboard-sidebar')) return false;
-                    if (!card.querySelector('h5')) return false;
-                    seen.add(card);
-                    return true;
+            const requiredSectionIds = [
+                'publishing-settings',
+                'seo-settings',
+                'ads-settings',
+                'scripts-settings',
+                'auto-scheduler-section',
+                'pipeline-config-section',
+                'admin-password-settings',
+                'sources-management'
+            ];
+
+            const orderedCards = requiredSectionIds
+                .map(function (id) { return document.getElementById(id); })
+                .filter(function (card) {
+                    return card instanceof HTMLElement && !card.closest('#active-control-panel') && card.querySelector('h5');
                 });
-            };
 
-            if (sourceContainer) {
-                const scopedCards = normalizeCards(Array.from(sourceContainer.querySelectorAll('.panel-section, .section-card')));
-                if (scopedCards.length) {
-                    return scopedCards;
-                }
-
-                const directCards = normalizeCards(Array.from(sourceContainer.children));
-                if (directCards.length) {
-                    return directCards;
-                }
+            if (orderedCards.length) {
+                return orderedCards;
             }
 
-            const globalCards = normalizeCards(Array.from(document.querySelectorAll('.panel-section, #control-cards-source .section-card')));
-            return globalCards;
+            if (!sourceContainer) {
+                return [];
+            }
+
+            return Array.from(sourceContainer.querySelectorAll('.panel-section')).filter(function (card) {
+                return card instanceof HTMLElement && !card.closest('#active-control-panel') && card.querySelector('h5');
+            });
         })();
         const panelNav = document.getElementById('control-panel-nav');
         const panelSearch = document.getElementById('control-panel-search');
