@@ -1,6 +1,17 @@
 <?php
 require_once 'functions.php';
 
+if (!function_exists('endsWith')) {
+    function endsWith($haystack, $needle) {
+        $haystack = (string)$haystack;
+        $needle = (string)$needle;
+        if ($needle === '') {
+            return true;
+        }
+        return substr($haystack, -strlen($needle)) === $needle;
+    }
+}
+
 $siteTitle = getSiteTitle();
 
 $maxAttempts = 5;
@@ -631,7 +642,9 @@ if ($requestMethod === 'POST') {
 
     if (isset($_POST['add_titles'])) {
         $rawTitles = array_map('trim', explode("\n", $_POST['titles'] ?? ''));
-        $titles = array_values(array_unique(array_filter($rawTitles, fn($t) => mb_strlen($t) >= 5)));
+        $titles = array_values(array_unique(array_filter($rawTitles, function ($t) {
+            return mb_strlen((string)$t) >= 5;
+        })));
         $generated = 0;
 
         foreach ($titles as $title) {
@@ -803,7 +816,9 @@ if ($requestMethod === 'POST') {
             }
         }
         $urls = array_map($normalizeSmartUrl, $urls);
-        $urls = array_values(array_unique(array_filter($urls, static fn($u) => $u !== '')));
+        $urls = array_values(array_unique(array_filter($urls, function ($u) {
+            return $u !== '';
+        })));
         if (!$urls) {
             $_SESSION['flash_message'] = 'Smart add failed: please provide at least one URL.';
             $_SESSION['flash_type'] = 'danger';
@@ -838,7 +853,7 @@ if ($requestMethod === 'POST') {
             if ($type === 'auto') {
                 $path = strtolower((string)parse_url($u, PHP_URL_PATH));
                 $query = strtolower((string)parse_url($u, PHP_URL_QUERY));
-                $type = (strpos($path, 'feed') !== false || str_ends_with($path, '.xml') || str_ends_with($path, '.rss') || str_ends_with($path, '.atom') || strpos($query, 'feed=') !== false)
+                $type = (strpos($path, 'feed') !== false || endsWith($path, '.xml') || endsWith($path, '.rss') || endsWith($path, '.atom') || strpos($query, 'feed=') !== false)
                     ? 'rss' : 'web';
             }
             if ($type === 'rss') $detectedRss++; else $detectedWeb++;
@@ -1041,7 +1056,9 @@ if ($requestMethod === 'POST') {
     if (isset($_POST['bulk_update_articles'])) {
         $bulkAction = trim((string)($_POST['bulk_article_action'] ?? ''));
         $selectedIds = array_map('intval', $_POST['article_ids'] ?? []);
-        $selectedIds = array_values(array_filter(array_unique($selectedIds), fn($id) => $id > 0));
+        $selectedIds = array_values(array_filter(array_unique($selectedIds), function ($id) {
+            return $id > 0;
+        }));
 
         if (!$selectedIds) {
             $_SESSION['flash_message'] = 'Please select at least one article.';
