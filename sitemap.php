@@ -21,7 +21,8 @@ $urls[] = [
     'news' => null,
 ];
 
-$stmt = $pdo->query("SELECT title, slug, category, published_at, image, image2 FROM articles ORDER BY datetime(published_at) DESC");
+$stmt = $pdo->prepare("SELECT title, slug, category, published_at, image, image2 FROM articles ORDER BY datetime(published_at) DESC");
+$stmt->execute();
 while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
     $publishedAt = trim((string)($row['published_at'] ?? ''));
     $title = trim((string)($row['title'] ?? ''));

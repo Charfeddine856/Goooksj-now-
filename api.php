@@ -37,10 +37,18 @@ if ($endpoint === 'rate_article') {
 }
 
 if ($endpoint === 'stats') {
-    $totalArticles = (int)$pdo->query("SELECT COUNT(*) FROM articles")->fetchColumn();
-    $totalSources = (int)$pdo->query("SELECT COUNT(*) FROM rss_sources")->fetchColumn();
-    $totalWebSources = (int)$pdo->query("SELECT COUNT(*) FROM web_sources")->fetchColumn();
-    $latestPublish = $pdo->query("SELECT MAX(published_at) FROM articles")->fetchColumn();
+    $totalArticlesStmt = $pdo->prepare("SELECT COUNT(*) FROM articles");
+    $totalArticlesStmt->execute();
+    $totalArticles = (int)$totalArticlesStmt->fetchColumn();
+    $totalSourcesStmt = $pdo->prepare("SELECT COUNT(*) FROM rss_sources");
+    $totalSourcesStmt->execute();
+    $totalSources = (int)$totalSourcesStmt->fetchColumn();
+    $totalWebSourcesStmt = $pdo->prepare("SELECT COUNT(*) FROM web_sources");
+    $totalWebSourcesStmt->execute();
+    $totalWebSources = (int)$totalWebSourcesStmt->fetchColumn();
+    $latestPublishStmt = $pdo->prepare("SELECT MAX(published_at) FROM articles");
+    $latestPublishStmt->execute();
+    $latestPublish = $latestPublishStmt->fetchColumn();
     $workflowSummary = getContentWorkflowSummary();
 
     echo json_encode([

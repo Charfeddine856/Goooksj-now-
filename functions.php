@@ -88,7 +88,8 @@ function getNicheWebSources($nicheSlug = '') {
  */
 function getTags() {
     $pdo = db_connect();
-    $stmt = $pdo->query("SELECT id, name, slug, description, post_count FROM tags ORDER BY post_count DESC");
+    $stmt = $pdo->prepare("SELECT id, name, slug, description, post_count FROM tags ORDER BY post_count DESC");
+    $stmt->execute();
     return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
 }
 
@@ -991,8 +992,12 @@ function runSelectedContentWorkflow($limit = null) {
 function getContentWorkflowSummary() {
     $pdo = db_connect();
     $selected = getSelectedContentWorkflow();
-    $rssSources = (int)$pdo->query("SELECT COUNT(*) FROM rss_sources")->fetchColumn();
-    $webSources = (int)$pdo->query("SELECT COUNT(*) FROM web_sources")->fetchColumn();
+    $rssSourcesStmt = $pdo->prepare("SELECT COUNT(*) FROM rss_sources");
+    $rssSourcesStmt->execute();
+    $rssSources = (int)$rssSourcesStmt->fetchColumn();
+    $webSourcesStmt = $pdo->prepare("SELECT COUNT(*) FROM web_sources");
+    $webSourcesStmt->execute();
+    $webSources = (int)$webSourcesStmt->fetchColumn();
     $dailyLimit = getSettingInt('daily_limit', 5, 1, 200);
 
     $selectedSources = $selected === 'web' ? $webSources : $rssSources;
@@ -1866,7 +1871,9 @@ function articleTitleFingerprintExists($title) {
     }
 
     $pdo = db_connect();
-    $rows = $pdo->query("SELECT title FROM articles ORDER BY id DESC LIMIT 500")->fetchAll(PDO::FETCH_COLUMN);
+    $rowsStmt = $pdo->prepare("SELECT title FROM articles ORDER BY id DESC LIMIT 500");
+    $rowsStmt->execute();
+    $rows = $rowsStmt->fetchAll(PDO::FETCH_COLUMN);
     foreach ($rows as $storedTitle) {
         $storedFingerprint = normalizeTitleFingerprint((string)$storedTitle);
         if ($storedFingerprint !== '' && hash_equals($storedFingerprint, $fingerprint)) {
@@ -1884,7 +1891,8 @@ function articleContentExists($content) {
     }
 
     $pdo = db_connect();
-    $stmt = $pdo->query("SELECT content FROM articles ORDER BY id DESC LIMIT 200");
+    $stmt = $pdo->prepare("SELECT content FROM articles ORDER BY id DESC LIMIT 200");
+    $stmt->execute();
     $rows = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
     foreach ($rows as $storedContent) {
