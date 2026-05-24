@@ -3403,7 +3403,7 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
             showTopAlert('تعذر النسخ تلقائيًا. انسخ يدويًا.', 'warning');
         }
     }
-    document.addEventListener('DOMContentLoaded', function () {
+    function initAdminDashboardPanels() {
         document.querySelectorAll('.niche-details-toggle').forEach(function (btn) {
             const targetSel = btn.getAttribute('data-bs-target');
             if (!targetSel) return;
@@ -3640,7 +3640,13 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
                 cb.checked = selectAll.checked;
             });
         });
-    });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initAdminDashboardPanels);
+    } else {
+        initAdminDashboardPanels();
+    }
 </script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
