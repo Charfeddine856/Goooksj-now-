@@ -237,7 +237,9 @@ if ($slug === '' && $openGraphImage === null && $defaultSocialImage !== '') {
 }
 
 if ($slug === '' && $staticPage === '') {
-    $latestForSchema = $pdo->query("SELECT title, slug FROM articles ORDER BY id DESC LIMIT 10")->fetchAll(PDO::FETCH_ASSOC);
+    $latestForSchemaStmt = $pdo->prepare("SELECT title, slug FROM articles ORDER BY id DESC LIMIT 10");
+    $latestForSchemaStmt->execute();
+    $latestForSchema = $latestForSchemaStmt->fetchAll(PDO::FETCH_ASSOC);
     if ($latestForSchema) {
         $listingStructuredData = [
             '@context' => 'https://schema.org',
@@ -1215,7 +1217,9 @@ $baseQuery['per_page'] = $perPage;
     $countStmt->execute($params);
     $total = (int)$countStmt->fetchColumn();
 
-    $totalArticles = (int)$pdo->query("SELECT COUNT(*) FROM articles")->fetchColumn();
+    $totalArticlesStmt = $pdo->prepare("SELECT COUNT(*) FROM articles");
+    $totalArticlesStmt->execute();
+    $totalArticles = (int)$totalArticlesStmt->fetchColumn();
     $totalPages = max(1, (int)ceil($total / $perPage));
     $page = min($page, $totalPages);
     $offset = ($page - 1) * $perPage;

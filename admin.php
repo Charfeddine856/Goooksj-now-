@@ -686,7 +686,9 @@ if ($requestMethod === 'POST') {
     }
 
     if (isset($_POST['fill_smart_sources_10_per_niche'])) {
-        $nichesForFill = $pdo->query("SELECT slug, name FROM niches ORDER BY id")->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        $nichesForFillStmt = $pdo->prepare("SELECT slug, name FROM niches ORDER BY id");
+        $nichesForFillStmt->execute();
+        $nichesForFill = $nichesForFillStmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
         $presetUrls = [];
         foreach ($nichesForFill as $n) {
             $slug = trim((string)($n['slug'] ?? 'general'));
@@ -704,7 +706,9 @@ if ($requestMethod === 'POST') {
     }
 
     if (isset($_POST['fill_all_smart_hub_fields'])) {
-        $nichesForFill = $pdo->query("SELECT slug, name FROM niches ORDER BY id")->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        $nichesForFillStmt = $pdo->prepare("SELECT slug, name FROM niches ORDER BY id");
+        $nichesForFillStmt->execute();
+        $nichesForFill = $nichesForFillStmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
         $firstSlug = (string)($nichesForFill[0]['slug'] ?? 'general');
         if ($firstSlug === '') $firstSlug = 'general';
         setSetting('active_niche', $firstSlug);
@@ -733,7 +737,9 @@ if ($requestMethod === 'POST') {
     }
 
     if (isset($_POST['fill_closed_fields_all_niches'])) {
-        $nichesForFill = $pdo->query("SELECT slug FROM niches ORDER BY id")->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        $nichesForFillStmt = $pdo->prepare("SELECT slug FROM niches ORDER BY id");
+        $nichesForFillStmt->execute();
+        $nichesForFill = $nichesForFillStmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
         $allSlugs = [];
         foreach ($nichesForFill as $n) {
             $slug = trim((string)($n['slug'] ?? ''));
@@ -1154,7 +1160,8 @@ if ($requestMethod === 'POST') {
     }
 
     if (isset($_POST['clear_page_visits'])) {
-        $pdo->exec("DELETE FROM page_visits");
+        $stmt = $pdo->prepare("DELETE FROM page_visits");
+        $stmt->execute();
         $_SESSION['flash_message'] = 'All page visit statistics have been cleared.';
         $_SESSION['flash_type'] = 'warning';
         header('Location: admin.php');
@@ -1187,34 +1194,15 @@ if ($requestMethod === 'POST') {
             'slug' => $slug,
             'id' => $articleId,
         ]);
-        $autoTranslate = getSettingInt('auto_translate_enabled', 0, 0, 1) === 1;
-                // Multi-niche publishing
-                $publishNiches = array_filter(array_map('trim', explode("\n", $_POST['publish_niches'] ?? '')));
-                $count = 0;
+        $duplicate = $duplicateStmt->fetch(PDO::FETCH_ASSOC);
+        if ($duplicate) {
+            $_SESSION['flash_message'] = 'Article update failed. Title or slug already exists.';
+            $_SESSION['flash_type'] = 'danger';
+            header('Location: admin.php');
+            exit;
+        }
 
-                if (!empty($publishNiches)) {
-                    foreach ($publishNiches as $nicheSlug) {
-                        $currentNiche = \App\NicheManager::getNicheBySlug($nicheSlug);
-                        if ($currentNiche) {
-                            setSetting('active_niche', $nicheSlug);
-                            $result = publishAutoArticleBySchedule(true);
-                            if (($result['published'] ?? 0) === 1) {
-                                $count++;
-                            }
-                        }
-                    }
-                    $_SESSION['flash_message'] = "Published {$count} article(s) across niches.";
-                    $_SESSION['flash_type'] = 'success';
-                } else {
-                    $result = publishAutoArticleBySchedule(true);
-                    if (($result['published'] ?? 0) === 1) {
-                        $_SESSION['flash_message'] = 'Auto-generated and published: ' . ($result['title'] ?? 'New article');
-                        $_SESSION['flash_type'] = 'success';
-                    } else {
-                        $_SESSION['flash_message'] = 'Automatic generation failed. Please try again.';
-                        $_SESSION['flash_type'] = 'danger';
-                    }
-                }
+        $autoTranslate = getSettingInt('auto_translate_enabled', 0, 0, 1) === 1;
         $targetLang = trim((string)getSetting('auto_translate_target_language', ''));
         $origLanguage = '';
         if ($autoTranslate && $targetLang) {
@@ -1331,7 +1319,9 @@ $webSearch = trim($_GET['qw'] ?? '');
 $articleCategory = trim($_GET['cat'] ?? '');
 
 if (isset($_GET['export']) && $_GET['export'] === 'articles_json') {
-    $exportRows = $pdo->query("SELECT title, slug, excerpt, category, image, image2, translated_title, translated_content, published_at FROM articles ORDER BY id DESC")->fetchAll(PDO::FETCH_ASSOC);
+    $exportStmt = $pdo->prepare("SELECT title, slug, excerpt, category, image, image2, translated_title, translated_content, published_at FROM articles ORDER BY id DESC");
+    $exportStmt->execute();
+    $exportRows = $exportStmt->fetchAll(PDO::FETCH_ASSOC);
     header('Content-Type: application/json; charset=utf-8');
     header('Content-Disposition: attachment; filename=articles-export.json');
     echo json_encode($exportRows, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
@@ -1339,7 +1329,9 @@ if (isset($_GET['export']) && $_GET['export'] === 'articles_json') {
 }
 
 if (isset($_GET['export']) && $_GET['export'] === 'articles_csv') {
-    $exportRows = $pdo->query("SELECT title, slug, category, image, image2, translated_title, published_at FROM articles ORDER BY id DESC")->fetchAll(PDO::FETCH_ASSOC);
+    $exportStmt = $pdo->prepare("SELECT title, slug, category, image, image2, translated_title, published_at FROM articles ORDER BY id DESC");
+    $exportStmt->execute();
+    $exportRows = $exportStmt->fetchAll(PDO::FETCH_ASSOC);
     header('Content-Type: text/csv; charset=utf-8');
     header('Content-Disposition: attachment; filename=articles-export.csv');
     $out = fopen('php://output', 'w');
@@ -1351,10 +1343,18 @@ if (isset($_GET['export']) && $_GET['export'] === 'articles_csv') {
     exit;
 }
 
-$totalArticles = (int)$pdo->query("SELECT COUNT(*) FROM articles")->fetchColumn();
-$totalSources = (int)$pdo->query("SELECT COUNT(*) FROM rss_sources")->fetchColumn();
-$totalWebSources = (int)$pdo->query("SELECT COUNT(*) FROM web_sources")->fetchColumn();
-$latestDate = $pdo->query("SELECT MAX(published_at) FROM articles")->fetchColumn();
+$totalArticlesStmt = $pdo->prepare("SELECT COUNT(*) FROM articles");
+$totalArticlesStmt->execute();
+$totalArticles = (int)$totalArticlesStmt->fetchColumn();
+$totalSourcesStmt = $pdo->prepare("SELECT COUNT(*) FROM rss_sources");
+$totalSourcesStmt->execute();
+$totalSources = (int)$totalSourcesStmt->fetchColumn();
+$totalWebSourcesStmt = $pdo->prepare("SELECT COUNT(*) FROM web_sources");
+$totalWebSourcesStmt->execute();
+$totalWebSources = (int)$totalWebSourcesStmt->fetchColumn();
+$latestDateStmt = $pdo->prepare("SELECT MAX(published_at) FROM articles");
+$latestDateStmt->execute();
+$latestDate = $latestDateStmt->fetchColumn();
 
 // allow filtering of page visit stats
 $pageVisitSearch = trim($_GET['pv_search'] ?? '');
@@ -1451,7 +1451,9 @@ $autoTitleAngles = (string)getAutoTitleSetting('auto_title_angles');
 $autoTitleTemplates = (string)getAutoTitleSetting('auto_title_templates');
 $autoTitleFixedTitles = (string)getAutoTitleSetting('auto_title_fixed_titles');
 $cronUrl = getCronEndpointUrl();
-$categoryOptions = $pdo->query("SELECT DISTINCT category FROM articles WHERE category IS NOT NULL AND category != '' ORDER BY category ASC")->fetchAll(PDO::FETCH_COLUMN);
+$categoryOptionsStmt = $pdo->prepare("SELECT DISTINCT category FROM articles WHERE category IS NOT NULL AND category != '' ORDER BY category ASC");
+$categoryOptionsStmt->execute();
+$categoryOptions = $categoryOptionsStmt->fetchAll(PDO::FETCH_COLUMN);
 
 $articleSql = "SELECT id, title, slug, category, excerpt, image, image2, translated_title, translated_content, content, published_at FROM articles";
 $articleParams = [];
@@ -2543,7 +2545,8 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
                     </form>
 
                     <?php
-                    $nichesListStmt = $pdo->query("SELECT id, slug, name, description FROM niches ORDER BY id");
+                    $nichesListStmt = $pdo->prepare("SELECT id, slug, name, description FROM niches ORDER BY id");
+                    $nichesListStmt->execute();
                     $nichesList = $nichesListStmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
                     ?>
 
@@ -2831,14 +2834,35 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
 
 
                                     <!-- تحسينات ذكية: عرض ملخص لكل نيش وعدد المقالات والمصادر -->
+                                    <?php
+                                        $nicheArticleCountStmt = $pdo->prepare('SELECT category, COUNT(*) AS total FROM articles GROUP BY category');
+                                        $nicheArticleCountStmt->execute();
+                                        $nicheArticleCounts = [];
+                                        foreach ($nicheArticleCountStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+                                            $nicheArticleCounts[(string)($row['category'] ?? '')] = (int)($row['total'] ?? 0);
+                                        }
+
+                                        $nicheSourceCountStmt = $pdo->prepare('SELECT niche_id, COUNT(*) AS total FROM niche_sources GROUP BY niche_id');
+                                        $nicheSourceCountStmt->execute();
+                                        $nicheSourceCounts = [];
+                                        foreach ($nicheSourceCountStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+                                            $nicheSourceCounts[(int)($row['niche_id'] ?? 0)] = (int)($row['total'] ?? 0);
+                                        }
+                                    ?>
                                     <div class="mb-3">
                                         <h6 class="text-info">ملخص النيشات</h6>
                                         <ul class="list-group">
                                             <?php foreach ($nichesList as $n): ?>
+                                                <?php
+                                                    $nicheSlug = (string)($n['slug'] ?? '');
+                                                    $nicheId = (int)($n['id'] ?? 0);
+                                                    $articleCount = (int)($nicheArticleCounts[$nicheSlug] ?? 0);
+                                                    $sourceCount = (int)($nicheSourceCounts[$nicheId] ?? 0);
+                                                ?>
                                                 <li class="list-group-item d-flex justify-content-between align-items-center">
-                                                    <span><strong><?= e($n['name']) ?></strong> (<?= e($n['slug']) ?>)</span>
-                                                    <span class="badge bg-primary">مقالات: <?= (int)$pdo->query("SELECT COUNT(*) FROM articles WHERE category = '" . $n['slug'] . "'")->fetchColumn() ?></span>
-                                                    <span class="badge bg-success">مصادر: <?= (int)$pdo->query("SELECT COUNT(*) FROM niche_sources WHERE niche_id = " . (int)$n['id'])->fetchColumn() ?></span>
+                                                    <span><strong><?= e($n['name']) ?></strong> (<?= e($nicheSlug) ?>)</span>
+                                                    <span class="badge bg-primary">مقالات: <?= $articleCount ?></span>
+                                                    <span class="badge bg-success">مصادر: <?= $sourceCount ?></span>
                                                 </li>
                                             <?php endforeach; ?>
                                         </ul>

@@ -10,7 +10,8 @@ class NicheManager
     public static function listNiches(): array
     {
         $pdo = \db_connect();
-        $stmt = $pdo->query("SELECT id, slug, name, description FROM niches ORDER BY id");
+        $stmt = $pdo->prepare("SELECT id, slug, name, description FROM niches ORDER BY id");
+        $stmt->execute();
         return $stmt->fetchAll(\PDO::FETCH_ASSOC) ?: [];
     }
 

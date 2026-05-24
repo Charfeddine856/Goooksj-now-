@@ -687,7 +687,9 @@ $migrationStmt = $pdo->prepare("SELECT value FROM settings WHERE key = ? LIMIT 1
 $migrationStmt->execute([$migrationKey]);
 $migrationApplied = $migrationStmt->fetchColumn();
 if ($migrationApplied === false) {
-    $currentMinWords = (int)$pdo->query("SELECT value FROM settings WHERE key = 'min_words' LIMIT 1")->fetchColumn();
+    $currentMinWordsStmt = $pdo->prepare("SELECT value FROM settings WHERE key = 'min_words' LIMIT 1");
+    $currentMinWordsStmt->execute();
+    $currentMinWords = (int)$currentMinWordsStmt->fetchColumn();
     if ($currentMinWords <= 1200) {
         $pdo->prepare("UPDATE settings SET value = '3000' WHERE key = 'min_words'")->execute();
     }
