@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>404 - الصفحة غير موجودة</title>
+<style>
+:root{color-scheme:dark}
+*{box-sizing:border-box}
+body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#0b1220;color:#e5e7eb;display:grid;place-items:center;min-height:100vh;margin:0;padding:20px}
+.card{max-width:760px;width:100%;padding:30px;border-radius:18px;background:#111827;border:1px solid #334155;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+h1{margin:0 0 10px;font-size:56px;line-height:1}
+h2{margin:0 0 10px;font-size:28px}
+p{margin:0 0 10px;line-height:1.8;color:#cbd5e1}
+.actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:12px}
+a{display:inline-block;padding:10px 14px;border-radius:10px;background:#1d4ed8;color:#fff;text-decoration:none}
+a.secondary{background:#334155}
+small{display:block;margin-top:14px;color:#94a3b8}
+</style>
+</head>
+<body>
+<main class="card" role="main" aria-labelledby="error-title">
+  <h1>404</h1>
+  <h2 id="error-title">الصفحة غير موجودة</h2>
+  <p>الرابط الذي طلبته غير متوفر أو تم نقله.</p>
+  <div class="actions">
+    <a href="/">العودة للرئيسية</a>
+    <a class="secondary" href="javascript:history.back()">رجوع</a>
+  </div>
+  <small>HTTP 404</small>
+</main>
+</body>
+</html>
