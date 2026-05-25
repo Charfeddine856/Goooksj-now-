@@ -1930,9 +1930,12 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
             font-weight: 600;
         }
         #control-panel-nav {
-            max-height: calc(100vh - 17rem);
+            max-height: calc(100vh - 16rem);
             overflow-y: auto;
             padding-right: 0.2rem;
+            padding-bottom: 0.3rem;
+            border-top: 1px solid rgba(148, 163, 184, 0.16);
+            margin-top: 0.75rem;
         }
         .section-counter {
             display: inline-block;
@@ -2225,8 +2228,11 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
                     <hr class="border-secondary-subtle my-3">
                     <h6 class="mb-2"><i class="bi bi-ui-checks-grid"></i> Quick Section Switcher</h6>
                     <input type="search" id="control-panel-search" class="form-control form-control-sm mb-2" placeholder="Search sections..." aria-label="Search dashboard sections">
-                    <span class="section-counter" id="section-counter">0/0 sections</span>
-                    <small class="d-block text-secondary mb-2" id="active-section-label">Active: —</small>
+                    <div class="d-flex justify-content-between align-items-center mb-2 gap-2">
+                        <span class="section-counter" id="section-counter">0/0 sections</span>
+                        <button type="button" class="btn btn-sm btn-outline-light" id="panel-reset-btn" aria-label="Reset search"><i class="bi bi-arrow-counterclockwise"></i> Reset</button>
+                    </div>
+                    <small class="d-block text-secondary mb-3" id="active-section-label">Active: —</small>
                     <div class="panel-nav-toolbar">
                         <button type="button" class="btn btn-sm btn-outline-light" id="panel-prev-btn" aria-label="Previous section"><i class="bi bi-arrow-left"></i><span>Previous</span></button>
                         <button type="button" class="btn btn-sm btn-outline-light" id="panel-next-btn" aria-label="Next section"><span>Next</span><i class="bi bi-arrow-right"></i></button>
@@ -2491,6 +2497,11 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
 
             <div class="card section-card mb-3 panel-section" id="auto-scheduler-section" style="display:none;">
                 <div class="card-body">
+                    <?php
+                    $nichesListStmt = $pdo->prepare("SELECT id, slug, name, description FROM niches ORDER BY id");
+                    $nichesListStmt->execute();
+                    $nichesList = $nichesListStmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+                    ?>
                     <h5 class="text-danger"><i class="bi bi-robot"></i> Smart Niche Automation Hub <span class="badge text-bg-dark ms-2">Pro</span></h5>
                     <p class="text-secondary mb-3">دمج ذكي بين <strong>AI Auto Publish Scheduler</strong> و <strong>Niche Management</strong> و <strong>Auto Title Generator Controls</strong> و <strong>Source Intake</strong> في لوحة واحدة لإدارة أسرع وأوضح.</p>
                     <div class="smart-toolbar">
@@ -2585,12 +2596,6 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
                             <button name="create_niche" value="1" class="btn btn-outline-light">Create Niche</button>
                         </div>
                     </form>
-
-                    <?php
-                    $nichesListStmt = $pdo->prepare("SELECT id, slug, name, description FROM niches ORDER BY id");
-                    $nichesListStmt->execute();
-                    $nichesList = $nichesListStmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
-                    ?>
 
                     <div class="mb-2">
                         <label class="form-label">Active Niche</label>
@@ -3658,6 +3663,21 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
                         renderPanel(firstVisibleIndex);
                     }
 
+                    updateNavState();
+                });
+            }
+
+            const resetBtn = document.getElementById('panel-reset-btn');
+            if (resetBtn) {
+                resetBtn.addEventListener('click', function () {
+                    if (!panelSearch) return;
+                    panelSearch.value = '';
+                    Array.from(panelNav.querySelectorAll('button')).forEach(function (btn) {
+                        btn.classList.remove('d-none');
+                    });
+                    if (sourceCards.length) {
+                        renderPanel(0);
+                    }
                     updateNavState();
                 });
             }
