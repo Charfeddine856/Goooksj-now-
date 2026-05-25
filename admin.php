@@ -2323,7 +2323,6 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
                     </form>
                     <small class="text-secondary">Manage global metadata for homepage, article title suffix, robots rules, and social sharing tags.</small>
                 </div>
-            </div>
 
             <!-- Section: Ads Manager -->
             <div class="card section-card mb-3 panel-section" id="ads-settings" style="display:none;">
