@@ -487,11 +487,14 @@ if ($requestMethod === 'POST') {
 
     if (isset($_POST['update_smart_niche_automation'])) {
         $nicheSlug = trim((string)($_POST['smart_active_niche'] ?? ''));
+        $activeNicheSlug = trim((string)getSetting('active_niche', 'general'));
         $validNicheSlug = '';
+
         if ($nicheSlug !== '' && class_exists('App\\NicheManager')) {
             $candidateNiche = \App\NicheManager::getNicheBySlug($nicheSlug);
             if ($candidateNiche) {
                 $validNicheSlug = (string)($candidateNiche['slug'] ?? '');
+                $activeNicheSlug = $validNicheSlug;
                 setSetting('active_niche', $validNicheSlug);
             }
         }
@@ -515,7 +518,10 @@ if ($requestMethod === 'POST') {
         setSetting('auto_publish_interval_seconds_from', (string)$intervalFrom);
         setSetting('auto_publish_interval_seconds_to', (string)$intervalTo);
         setSetting('auto_publish_interval_seconds', (string)$interval);
-        setSetting('auto_title_mode', $mode);
+
+        $nichePrefix = 'niche.' . ($activeNicheSlug !== '' ? $activeNicheSlug : 'general') . '.';
+        setSetting($nichePrefix . 'auto_title_mode', $mode);
+        setSetting('smart_source_prefill_niche', $activeNicheSlug);
 
         $smartMsg = 'Smart automation hub updated (niche + scheduler + title mode).';
         $smartFlashType = 'success';
@@ -732,6 +738,9 @@ if ($requestMethod === 'POST') {
         setSetting('smart_source_prefill_url', 'https://news.google.com/rss/search?q=' . rawurlencode($firstSlug));
         setSetting('smart_source_prefill_type', 'rss');
         setSetting('smart_source_prefill_niche', $firstSlug);
+        setSetting('niche.' . $firstSlug . '.auto_title_mode', 'template');
+        setSetting('niche.' . $firstSlug . '.auto_title_min_year_offset', '0');
+        setSetting('niche.' . $firstSlug . '.auto_title_max_year_offset', '1');
 
         $presetUrls = [];
         foreach ($nichesForFill as $n) {
@@ -775,6 +784,9 @@ if ($requestMethod === 'POST') {
         $smartUrl = trim((string)($_POST['smart_source_url'] ?? ''));
         $smartUrlsBulk = trim((string)($_POST['smart_source_urls'] ?? ''));
         $smartNicheSlug = trim((string)($_POST['smart_target_niche_slug'] ?? ''));
+        if ($smartNicheSlug === '') {
+            $smartNicheSlug = trim((string)getSetting('active_niche', ''));
+        }
         $smartType = trim((string)($_POST['smart_source_type'] ?? 'auto'));
 
         $normalizeSmartUrl = static function ($url) {
@@ -1720,10 +1732,19 @@ $webSql .= " ORDER BY id DESC";
 
     if (isset($_POST['set_active_niche'])) {
         $slug = trim((string)($_POST['active_niche'] ?? ''));
-        if ($slug !== '') {
-            setSetting('active_niche', $slug);
-            $_SESSION['flash_message'] = 'Active niche updated.';
-            $_SESSION['flash_type'] = 'success';
+        if ($slug !== '' && class_exists('App\\NicheManager')) {
+            $niche = \App\NicheManager::getNicheBySlug($slug);
+            if ($niche) {
+                setSetting('active_niche', $slug);
+                $_SESSION['flash_message'] = 'Active niche updated.';
+                $_SESSION['flash_type'] = 'success';
+            } else {
+                $_SESSION['flash_message'] = 'Invalid niche selected.';
+                $_SESSION['flash_type'] = 'danger';
+            }
+        } else {
+            $_SESSION['flash_message'] = 'Invalid niche selected.';
+            $_SESSION['flash_type'] = 'danger';
         }
         header('Location: admin.php');
         exit;
@@ -2506,6 +2527,7 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
                     <p class="text-secondary mb-3">دمج ذكي بين <strong>AI Auto Publish Scheduler</strong> و <strong>Niche Management</strong> و <strong>Auto Title Generator Controls</strong> و <strong>Source Intake</strong> في لوحة واحدة لإدارة أسرع وأوضح.</p>
                     <div class="smart-toolbar">
                         <span class="smart-pill"><i class="bi bi-diagram-3"></i> Niches: <?= count($nichesList) ?></span>
+                        <span class="smart-pill"><i class="bi bi-tags"></i> Active: <?= e((string)getSetting('active_niche', 'general')) ?></span>
                         <span class="smart-pill"><i class="bi bi-clock-history"></i> Interval: <?= (int)$autoPublishIntervalFrom ?> - <?= (int)$autoPublishIntervalTo ?>s</span>
                         <span class="smart-pill"><i class="bi bi-cpu"></i> Mode: <?= e(strtoupper($autoTitleMode)) ?></span>
                         <span class="smart-pill"><i class="bi bi-lightning-charge"></i> Scheduler: <?= $autoAiEnabled ? 'ON' : 'OFF' ?></span>
@@ -2843,9 +2865,10 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
                         </div>
                         <div class="col-md-3">
                             <select name="smart_target_niche_slug" class="form-select">
-                                <option value="">Optional niche link</option>
+                                <option value="">Optional niche link (falls back to active niche)</option>
+                                <?php $currentActiveNiche = (string)getSetting('active_niche', 'general'); ?>
                                 <?php foreach ($nichesList as $n): ?>
-                                    <option value="<?= e($n['slug']) ?>"><?= e($n['name']) ?> (<?= e($n['slug']) ?>)</option>
+                                    <option value="<?= e($n['slug']) ?>" <?= $currentActiveNiche === $n['slug'] ? 'selected' : '' ?>><?= e($n['name']) ?> (<?= e($n['slug']) ?>)</option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
@@ -2869,8 +2892,9 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
                             <label class="form-label">إدارة العنوان التلقائي لكل نيش</label>
                             <select name="niche_auto_title" class="form-select">
                                 <option value="">اختر النيش</option>
+                                <?php $currentActiveNiche = (string)getSetting('active_niche', 'general'); ?>
                                 <?php foreach ($nichesList as $n): ?>
-                                    <option value="<?= e($n['slug']) ?>" <?= e((string)getSetting('smart_source_prefill_niche', '')) === $n['slug'] ? 'selected' : '' ?>><?= e($n['name']) ?> (<?= e($n['slug']) ?>)</option>
+                                    <option value="<?= e($n['slug']) ?>" <?= $currentActiveNiche === $n['slug'] ? 'selected' : '' ?>><?= e($n['name']) ?> (<?= e($n['slug']) ?>)</option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
