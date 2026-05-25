@@ -1866,6 +1866,11 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
             top: 1rem;
             max-height: calc(100vh - 2rem);
             overflow: hidden;
+            padding: 1rem;
+            background: rgba(15, 23, 42, 0.95);
+            border: 1px solid rgba(148, 163, 184, 0.16);
+            box-shadow: 0 24px 48px rgba(15, 23, 42, 0.18);
+            border-radius: 1.1rem;
         }
         .dashboard-sidebar .nav-link {
             color: #bfdbfe;
@@ -1887,6 +1892,9 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
             border: 1px solid rgba(59, 130, 246, 0.45);
             color: #bfdbfe;
             background: rgba(37, 99, 235, 0.1);
+            border-radius: 0.8rem;
+            padding: 0.8rem 1rem;
+            transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
         }
         .panel-nav-btn:hover,
         .panel-nav-btn.active {
@@ -1945,8 +1953,26 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
             font-size: 0.82rem;
             text-align: center;
         }
-        #active-control-panel .section-card {
-            margin-bottom: 1rem;
+        #active-control-panel {
+            display: none;
+        }
+        #control-cards-source {
+            display: block !important;
+            width: 100%;
+        }
+        .panel-section {
+            display: block !important;
+            opacity: 1 !important;
+            transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+        }
+        .panel-section:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 26px 75px rgba(15, 23, 42, 0.16);
+        }
+        .panel-card-highlight {
+            border-color: rgba(59, 130, 246, 0.8) !important;
+            box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.25);
+            background: rgba(37, 99, 235, 0.12) !important;
         }
         .btn-primary,
         .btn-outline-info,
@@ -2214,7 +2240,7 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
 
         <div class="col-lg-9">
             <div id="active-control-panel" class="mb-3"></div>
-            <div class="row g-4 d-none" id="control-cards-source">
+            <div class="row g-4" id="control-cards-source">
                 <!-- Section: Daily Publishing Limit -->
                 <div class="card section-card mb-3 panel-section" id="publishing-settings" style="display:none;">
                     <div class="card-body">
@@ -3541,17 +3567,15 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
         }
 
         function renderPanel(index) {
-            if (!activePanel || !sourceCards[index]) return;
+            if (!sourceCards[index]) return;
             currentIndex = index;
-            activePanel.innerHTML = '';
 
             sourceCards.forEach(function (card) {
-                card.style.display = 'none';
+                card.classList.remove('panel-card-highlight');
             });
 
             const selectedCard = sourceCards[index];
-            selectedCard.style.display = 'block';
-            activePanel.appendChild(selectedCard);
+            selectedCard.classList.add('panel-card-highlight');
 
             panelNav.querySelectorAll('button').forEach(function (btn) {
                 const isActive = Number(btn.dataset.index) === index;
@@ -3559,11 +3583,12 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
             });
 
             if (activeSectionLabel) {
-                const titleEl = sourceCards[index].querySelector('h5');
+                const titleEl = selectedCard.querySelector('h5');
                 const label = titleEl ? titleEl.innerText.trim() : 'Section ' + (index + 1);
                 activeSectionLabel.textContent = 'Active: ' + label;
             }
 
+            selectedCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
             updateCounter();
         }
 
@@ -3597,7 +3622,7 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
             }
         }
 
-        if (panelNav && activePanel && sourceCards.length) {
+        if (panelNav && sourceCards.length) {
             sourceCards.forEach(function (card, index) {
                 const titleEl = card.querySelector('h5');
                 const label = titleEl ? titleEl.innerText.trim() : 'Section ' + (index + 1);
