@@ -514,6 +514,14 @@ if ($requestMethod === 'POST') {
             $mode = 'template';
         }
 
+        $minYearOffset = (int)($_POST['smart_auto_title_min_year_offset'] ?? 0);
+        $maxYearOffset = (int)($_POST['smart_auto_title_max_year_offset'] ?? 1);
+        $minYearOffset = max(-1, min(2, $minYearOffset));
+        $maxYearOffset = max(-1, min(3, $maxYearOffset));
+        if ($maxYearOffset < $minYearOffset) {
+            [$minYearOffset, $maxYearOffset] = [$maxYearOffset, $minYearOffset];
+        }
+
         setSetting('auto_ai_enabled', (string)$enabled);
         setSetting('auto_publish_interval_seconds_from', (string)$intervalFrom);
         setSetting('auto_publish_interval_seconds_to', (string)$intervalTo);
@@ -521,6 +529,8 @@ if ($requestMethod === 'POST') {
 
         $nichePrefix = 'niche.' . ($activeNicheSlug !== '' ? $activeNicheSlug : 'general') . '.';
         setSetting($nichePrefix . 'auto_title_mode', $mode);
+        setSetting($nichePrefix . 'auto_title_min_year_offset', (string)$minYearOffset);
+        setSetting($nichePrefix . 'auto_title_max_year_offset', (string)$maxYearOffset);
         setSetting('smart_source_prefill_niche', $activeNicheSlug);
 
         $smartMsg = 'Smart automation hub updated (niche + scheduler + title mode).';
@@ -2543,11 +2553,19 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
                                 <option value="list" <?= $autoTitleMode === 'list' ? 'selected' : '' ?>>Fixed Titles List</option>
                             </select>
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-md-1">
+                            <label class="form-label">Year Offset Min</label>
+                            <input type="number" name="smart_auto_title_min_year_offset" class="form-control" min="-1" max="2" value="<?= (int)$autoTitleMinYearOffset ?>">
+                        </div>
+                        <div class="col-md-1">
+                            <label class="form-label">Year Offset Max</label>
+                            <input type="number" name="smart_auto_title_max_year_offset" class="form-control" min="-1" max="3" value="<?= (int)$autoTitleMaxYearOffset ?>">
+                        </div>
+                        <div class="col-md-1">
                             <label class="form-label">Interval From</label>
                             <input type="number" name="smart_auto_publish_interval_seconds_from" class="form-control" min="0" max="300000" value="<?= (int)$autoPublishIntervalFrom ?>">
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-md-1">
                             <label class="form-label">Interval To</label>
                             <input type="number" name="smart_auto_publish_interval_seconds_to" class="form-control" min="0" max="300000" value="<?= (int)$autoPublishIntervalTo ?>">
                         </div>
@@ -2613,17 +2631,8 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
                         </div>
                     </form>
 
-                    <div class="mb-2">
-                        <label class="form-label">Active Niche</label>
-                        <form method="post" class="d-flex gap-2 align-items-center mb-2">
-                            <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
-                            <select name="active_niche" class="form-select">
-                                <?php foreach ($nichesList as $n): ?>
-                                    <option value="<?= e($n['slug']) ?>" <?= e((string)getSetting('active_niche', 'general')) === $n['slug'] ? 'selected' : '' ?>><?= e($n['name']) ?> (<?= e($n['slug']) ?>)</option>
-                                <?php endforeach; ?>
-                            </select>
-                            <button name="set_active_niche" class="btn btn-sm btn-outline-light">Set</button>
-                        </form>
+                    <div class="alert alert-info mb-3">
+                        <strong>ملاحظة:</strong> استخدم اختيار النيش في أعلى قسم <strong>Smart Niche Automation Hub Pro</strong> كنقطة تحكم واحدة للنيش النشط. سيُستخدم هذا النيش في إضافة المصادر والكتاب الآلي والعناوين.
                     </div>
 
                     <div class="list-group mb-3">
@@ -2880,23 +2889,9 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
                     </div>
                     <hr class="border-secondary-subtle my-3">
                     <h6><span class="badge text-bg-secondary me-2">3</span><i class="bi bi-sliders"></i> Advanced Scheduler + Title Controls</h6>
-                    <form method="post" class="row g-2 align-items-end mb-3">
-                        <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
-                        <div class="col-12">
-                            <label class="form-label">إدارة العنوان التلقائي لكل نيش</label>
-                            <select name="niche_auto_title" class="form-select">
-                                <option value="">اختر النيش</option>
-                                <?php $currentActiveNiche = (string)getSetting('active_niche', 'general'); ?>
-                                <?php foreach ($nichesList as $n): ?>
-                                    <option value="<?= e($n['slug']) ?>" <?= $currentActiveNiche === $n['slug'] ? 'selected' : '' ?>><?= e($n['name']) ?> (<?= e($n['slug']) ?>)</option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="col-12 mt-2">
-                            <button name="manage_niche_auto_title" value="1" class="btn btn-warning">إدارة إعدادات العنوان التلقائي للنيش</button>
-                        </div>
-                    </form>
-
+                    <div class="alert alert-secondary mb-3">
+                        <strong>تحسين:</strong> تم توحيد إدارة العنوان التلقائي عبر النيش النشط فقط. اختر النيش من أعلى لوحة Smart Hub ثم اضغط "Apply Smart Merge Settings" لتحديث إعدادات العنوان والجدولة وتحديد النيش النشط.
+                    </div>
 
                                     <!-- تحسينات ذكية: عرض ملخص لكل نيش وعدد المقالات والمصادر -->
                                     <?php
