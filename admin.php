@@ -1876,19 +1876,6 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
             height: 6px;
             background-color: rgba(255, 255, 255, 0.12);
         }
-        .admin-tabs .nav-link {
-            color: #cbd5e1;
-            border-color: rgba(255, 255, 255, 0.12);
-            background: rgba(148, 163, 184, 0.08);
-        }
-        .admin-tabs .nav-link.active {
-            color: #fff;
-            background: rgba(220, 38, 38, 0.25);
-            border-color: rgba(252, 165, 165, 0.6);
-        }
-        .admin-tabs .nav-link:hover {
-            color: #fff;
-        }
         .dashboard-sidebar {
             position: sticky;
             top: 1rem;
@@ -3120,31 +3107,7 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
             </div>
 
 
-            <ul class="nav nav-pills admin-tabs gap-2 mb-3" id="adminDataTabs" role="tablist">
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link active" id="articles-tab" data-bs-toggle="pill" data-bs-target="#articles-pane" type="button" role="tab" aria-controls="articles-pane" aria-selected="true">
-                        <i class="bi bi-newspaper me-1"></i> Articles
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="rss-tab" data-bs-toggle="pill" data-bs-target="#rss-pane" type="button" role="tab" aria-controls="rss-pane" aria-selected="false">
-                        <i class="bi bi-rss me-1"></i> RSS Sources
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="web-tab" data-bs-toggle="pill" data-bs-target="#web-pane" type="button" role="tab" aria-controls="web-pane" aria-selected="false">
-                        <i class="bi bi-globe2 me-1"></i> Web Sources
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="settings-tab" data-bs-toggle="pill" data-bs-target="#settings-pane" type="button" role="tab" aria-controls="settings-pane" aria-selected="false">
-                        <i class="bi bi-gear me-1"></i> Settings
-                    </button>
-                </li>
-            </ul>
-
-            <div class="tab-content">
-                <div class="tab-pane fade show active" id="articles-pane" role="tabpanel" aria-labelledby="articles-tab" tabindex="0">
+                <div id="articles-pane">
                     <div class="card section-card mb-3">
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-center mb-3">
@@ -3266,7 +3229,7 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
                     </div>
                 </div>
 
-                <div class="tab-pane fade" id="rss-pane" role="tabpanel" aria-labelledby="rss-tab" tabindex="0">
+                <div id="rss-pane">
                     <div class="card section-card mb-3">
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-center mb-3">
@@ -3314,7 +3277,7 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
                     </div>
                 </div>
 
-                <div class="tab-pane fade" id="web-pane" role="tabpanel" aria-labelledby="web-tab" tabindex="0">
+                <div id="web-pane">
                     <div class="card section-card mt-0">
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-center mb-3">
@@ -3362,7 +3325,7 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
                     </div>
                 </div>
 
-                <div class="tab-pane fade" id="settings-pane" role="tabpanel" aria-labelledby="settings-tab" tabindex="0">
+                <div id="settings-pane">
                     <div class="card section-card mt-0">
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-center mb-3">
@@ -3420,9 +3383,6 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
                         </div>
                     </div>
                 </div>
-
-                </div>
-            </div>
         </div>
             </div>
         </div>
