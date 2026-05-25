@@ -82,6 +82,72 @@ function getActiveNicheId() {
     return $niche ? (int)$niche['id'] : 1;
 }
 
+function getActiveNicheInfo($slug = '') {
+    if ($slug === '') {
+        $slug = getActiveNicheSlug();
+    }
+    if (!class_exists('App\\NicheManager')) {
+        return [
+            'slug' => $slug,
+            'name' => 'General',
+            'description' => 'General articles and news.',
+        ];
+    }
+
+    $niche = \App\NicheManager::getNicheBySlug($slug);
+    if (!$niche) {
+        return [
+            'slug' => $slug,
+            'name' => 'General',
+            'description' => 'General articles and news.',
+        ];
+    }
+
+    return [
+        'slug' => (string)($niche['slug'] ?? ''),
+        'name' => (string)($niche['name'] ?? 'General'),
+        'description' => (string)($niche['description'] ?? ''),
+    ];
+}
+
+function getNicheArticleMeta($slug = '') {
+    $info = getActiveNicheInfo($slug);
+    $slugLower = mb_strtolower((string)$info['slug'], 'UTF-8');
+    $name = $info['name'] !== '' ? $info['name'] : 'General';
+    $category = $name;
+    $label = $name;
+    $introContext = 'audience expectations, topical relevance, and niche-specific value';
+
+    if ($slugLower === 'ev' || str_contains($name, 'Electric')) {
+        $label = 'Electric Vehicles';
+        $introContext = 'charging behavior, efficiency trends, and EV ownership confidence';
+    } elseif ($slugLower === 'motorcycles' || str_contains($name, 'Motorcycle')) {
+        $label = 'Motorcycle Reviews';
+        $introContext = 'riding dynamics, ergonomics, and road confidence';
+    } elseif (str_contains($slugLower, 'cuisine') || str_contains($name, 'Food') || str_contains($name, 'Cooking')) {
+        $label = 'Food & Recipe Insights';
+        $category = 'Cuisine';
+        $introContext = 'recipe quality, flavor balance, and practical cooking tips';
+    } elseif (str_contains($slugLower, 'health') || str_contains($name, 'Health')) {
+        $label = 'Health & Wellness';
+        $category = 'Health';
+        $introContext = 'wellness benefits, practical routines, and evidence-based guidance';
+    } elseif (str_contains($slugLower, 'business') || str_contains($name, 'Business')) {
+        $label = 'Business Intelligence';
+        $category = 'Business';
+        $introContext = 'market trends, opportunity analysis, and strategic recommendations';
+    }
+
+    return [
+        'slug' => $info['slug'],
+        'name' => $name,
+        'description' => $info['description'],
+        'label' => $label,
+        'category' => $category,
+        'intro_context' => $introContext,
+    ];
+}
+
 /**
  * Get RSS sources for a specific niche (or active niche if not specified)
  */
@@ -2007,13 +2073,32 @@ function verifyAdminPassword($password) {
     return password_verify($password, $storedHash);
 }
 
-function getRandomIntro($title) {
-    $intros = [
-        "The $title arrives at a time when buyers expect more than raw performance—they expect intelligence, consistency, and real ownership value.",
-        "The $title reflects a modern automotive philosophy where design, software, efficiency, and durability must all work together.",
-        "With the $title, the brand is clearly targeting drivers who care about emotional appeal and practical decision-making in equal measure.",
-        "The $title enters a competitive segment, and its real strength is how it balances premium character with day-to-day usability."
-    ];
+function getRandomIntro($title, array $nicheMeta = []) {
+    $nicheLabel = trim((string)($nicheMeta['label'] ?? ''));
+    $isCuisine = str_contains(mb_strtolower($nicheLabel, 'UTF-8'), 'food') || str_contains(mb_strtolower($nicheLabel, 'UTF-8'), 'cuisine');
+    $isHealth = str_contains(mb_strtolower($nicheLabel, 'UTF-8'), 'health');
+
+    $intros = [];
+    if ($isCuisine) {
+        $intros = [
+            "The $title is designed to help home cooks and food lovers make smarter, tastier choices in the kitchen.",
+            "For the $title, flavor balance, preparation clarity, and ingredient quality are the strongest selling points.",
+            "This $title combines approachable cooking guidance with practical recipe insights that matter to everyday chefs.",
+        ];
+    } elseif ($isHealth) {
+        $intros = [
+            "The $title is framed around real wellness benefits and practical steps that ordinary readers can apply.",
+            "With the $title, the focus is on evidence-based advice, easy-to-follow habits, and sustainable lifestyle improvements.",
+            "This $title is tailored for people who want clear health guidance rather than vague motivational messaging.",
+        ];
+    } else {
+        $intros = [
+            "The $title arrives at a time when buyers expect more than raw performance—they expect intelligence, consistency, and real ownership value.",
+            "The $title reflects a modern automotive philosophy where design, software, efficiency, and durability must all work together.",
+            "With the $title, the brand is clearly targeting drivers who care about emotional appeal and practical decision-making in equal measure.",
+            "The $title enters a competitive segment, and its real strength is how it balances premium character with day-to-day usability.",
+        ];
+    }
 
     return $intros[array_rand($intros)];
 }
@@ -2519,20 +2604,22 @@ function buildArticleTableOfContents(array $sections) {
 }
 
 function generateArticle($title) {
+    $activeNicheSlug = getActiveNicheSlug();
+    $nicheMeta = getNicheArticleMeta($activeNicheSlug);
     $model = trim(preg_replace('/\b(202[0-9]|20[0-9]{2})\b/', '', $title));
-    $isEV = stripos($title, 'EV') !== false || stripos($title, 'electric') !== false;
+    $isEV = stripos($title, 'EV') !== false || stripos($title, 'electric') !== false || str_contains(mb_strtolower($nicheMeta['slug'], 'UTF-8'), 'ev');
     $bodyType = classifyVehicleProfile($title);
 
     $content = "<h1>" . htmlspecialchars($title) . "</h1>\n";
-    $content .= "<p class='text-muted'>Published " . date('F j, Y') . " • AutoCar Niche</p>\n";
+    $content .= "<p class='text-muted'>Published " . date('F j, Y') . " • " . htmlspecialchars($nicheMeta['label'], ENT_QUOTES, 'UTF-8') . "</p>\n";
     $coverImage = buildUniqueArticleImageUrl($title, $model);
     $imageAltSuffix = trim((string)getSetting('seo_image_alt_suffix', ' - car image'));
     $imageTitleSuffix = trim((string)getSetting('seo_image_title_suffix', ' - photo'));
     $imageAlt = trim($title . ' ' . ltrim($imageAltSuffix, '- '));
     $imageTitle = trim($title . ' ' . ltrim($imageTitleSuffix, '- '));
     $content .= "<img src='" . htmlspecialchars($coverImage, ENT_QUOTES, 'UTF-8') . "' class='img-fluid rounded mb-4' alt='" . htmlspecialchars($imageAlt, ENT_QUOTES, 'UTF-8') . "' title='" . htmlspecialchars($imageTitle, ENT_QUOTES, 'UTF-8') . "' loading='eager' decoding='async' fetchpriority='high'>\n";
-    $content .= "<p>" . getRandomIntro($title) . " This review follows an editorial structure designed to deliver deep analysis, clear comparisons, and practical buying guidance.</p>\n";
-    $content .= "<p>This {$title} review is optimized to answer the top buyer questions around performance, reliability, pricing logic, and long-term ownership value.</p>\n";
+    $content .= "<p>" . getRandomIntro($title, $nicheMeta) . " This review follows an editorial structure designed to deliver deep analysis, clear comparisons, and practical buying guidance.</p>\n";
+    $content .= "<p>This {$title} review is optimized to answer the top buyer questions around " . htmlspecialchars($nicheMeta['intro_context'], ENT_QUOTES, 'UTF-8') . ".</p>\n";
     $content .= "<p><strong>Quick Take:</strong> The {$title} is a {$bodyType}-class product focused on balanced performance, everyday usability, and ownership predictability rather than one-dimensional headline metrics.</p>\n";
     $content .= "<h2>What You Will Learn in This Guide</h2>\n";
     $content .= "<ul><li>How {$title} performs in real ownership conditions, not only in launch marketing.</li><li>Which trim strategy makes the most financial sense for different buyer types.</li><li>Where {$title} stands versus competitors in comfort, tech, efficiency, and long-term value.</li></ul>\n";
@@ -2600,7 +2687,7 @@ function generateArticle($title) {
     $drivetrain = $isEV ? 'Dual Electric Motors (AWD)' : '2.5L Turbo + Advanced Automatic Transmission';
 
     $content .= "<h2>Technical Snapshot</h2>\n";
-    $content .= "<table class='table table-bordered'><tr><th>Powertrain</th><td>{$drivetrain}</td></tr><tr><th>Output</th><td>{$horsepower} hp</td></tr><tr><th>0-60 mph</th><td>{$zeroToSixty} seconds</td></tr><tr><th>Efficiency</th><td>{$efficiencyLine}</td></tr><tr><th>Editorial Category</th><td>Auto</td></tr></table>\n";
+    $content .= "<table class='table table-bordered'><tr><th>Powertrain</th><td>{$drivetrain}</td></tr><tr><th>Output</th><td>{$horsepower} hp</td></tr><tr><th>0-60 mph</th><td>{$zeroToSixty} seconds</td></tr><tr><th>Efficiency</th><td>{$efficiencyLine}</td></tr><tr><th>Editorial Category</th><td>" . htmlspecialchars($nicheMeta['category'], ENT_QUOTES, 'UTF-8') . "</td></tr></table>\n";
 
     $content .= buildComparisonTable($title, $bodyType, $isEV);
     $content .= buildBuyerPersonaSection($title, $isEV, $bodyType);
@@ -2715,6 +2802,12 @@ function saveArticle($title, $data) {
         $origLanguage = $targetLang;
     }
 
+    $nicheMeta = getNicheArticleMeta();
+    $category = trim((string)$nicheMeta['category']);
+    if ($category === '') {
+        $category = 'News';
+    }
+
     $stmt = $pdo->prepare("INSERT INTO articles (title, slug, content, image, image2, excerpt, published_at, category, niche_id, translated_title, translated_content, orig_language) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)");
     executeStatementWithRetry($stmt, [
         $title,
@@ -2724,7 +2817,7 @@ function saveArticle($title, $data) {
         $data['image2'] ?? null,
         $data['excerpt'] ?? null,
         date('Y-m-d H:i:s'),
-        'News',
+        $category,
         $nicheId,
         $translatedTitle,
         $translatedContent,
