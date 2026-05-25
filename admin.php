@@ -738,6 +738,13 @@ if ($requestMethod === 'POST') {
         setSetting('smart_source_prefill_url', 'https://news.google.com/rss/search?q=' . rawurlencode($firstSlug));
         setSetting('smart_source_prefill_type', 'rss');
         setSetting('smart_source_prefill_niche', $firstSlug);
+        setSetting('smart_source_prefill_selected_niches', $firstSlug);
+
+        $defaultTitleFields = getAutoTitleDefaultSettings();
+        foreach (['auto_title_brands', 'auto_title_models', 'auto_title_modifiers', 'auto_title_audiences', 'auto_title_angles', 'auto_title_templates', 'auto_title_fixed_titles'] as $fieldKey) {
+            setSetting('niche.' . $firstSlug . '.' . $fieldKey, (string)($defaultTitleFields[$fieldKey] ?? ''));
+        }
+
         setSetting('niche.' . $firstSlug . '.auto_title_mode', 'template');
         setSetting('niche.' . $firstSlug . '.auto_title_min_year_offset', '0');
         setSetting('niche.' . $firstSlug . '.auto_title_max_year_offset', '1');
@@ -2882,7 +2889,7 @@ $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
                         </div>
                     </form>
                     <div class="alert alert-secondary small mb-3">
-                        استخدم نموذج <strong>Unified Source Intake</strong> أعلاه لإضافة RSS أو مواقع عادية (مفرد أو جماعي) مع ربط اختياري بالنيش.
+                        استخدم نموذج <strong>Unified Source Intake</strong> أعلاه لإضافة RSS أو مواقع عادية (مفرد أو جماعي). إذا تركت النيش فارغًا، سيتم الربط تلقائيًا بـ <strong>النيش النشط</strong>.
                     </div>
                     <hr class="border-secondary-subtle my-3">
                     <h6><span class="badge text-bg-secondary me-2">3</span><i class="bi bi-sliders"></i> Advanced Scheduler + Title Controls</h6>
