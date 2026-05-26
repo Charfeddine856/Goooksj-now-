@@ -599,6 +599,7 @@ try {
     // Column already exists or migration not needed
 }
 $pdo->exec("CREATE INDEX IF NOT EXISTS idx_articles_niche_id ON articles(niche_id)");
+$pdo->exec("UPDATE articles SET niche_id = 1 WHERE niche_id IS NULL");
 
 // Migration: add secondary image and translation columns
 try {

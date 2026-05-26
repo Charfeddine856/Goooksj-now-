@@ -2023,16 +2023,24 @@ function generateUniqueSlug($title) {
     }
 }
 
-function buildFreeArticleImageUrl($seed) {
+function buildFreeArticleImageUrl($seed, $nicheSlug = '') {
     $seedText = trim((string)$seed);
     if ($seedText === '') {
         $seedText = 'car-article';
     }
 
-    $slug = preg_replace('/[^a-z0-9]+/i', '-', strtolower($seedText));
+    if ($nicheSlug === '') {
+        $nicheSlug = getActiveNicheSlug();
+    }
+    $nicheSlug = trim((string)$nicheSlug);
+    if ($nicheSlug === '') {
+        $nicheSlug = 'general';
+    }
+
+    $slug = preg_replace('/[^a-z0-9]+/i', '-', strtolower($seedText . '-' . $nicheSlug));
     $slug = trim((string)$slug, '-');
     if ($slug === '') {
-        $slug = 'car-article';
+        $slug = 'car-article-general';
     }
 
     return "https://picsum.photos/seed/{$slug}/1200/675";
@@ -2041,10 +2049,11 @@ function buildFreeArticleImageUrl($seed) {
 function buildUniqueArticleImageUrl($title, $model = '') {
     $pdo = db_connect();
     $baseSeed = trim($title . '-' . $model);
+    $activeNiche = getActiveNicheSlug();
 
     for ($attempt = 1; $attempt <= 20; $attempt++) {
         $seed = $attempt === 1 ? $baseSeed : $baseSeed . '-' . $attempt;
-        $candidate = buildFreeArticleImageUrl($seed);
+        $candidate = buildFreeArticleImageUrl($seed, $activeNiche);
         $stmt = $pdo->prepare("SELECT 1 FROM articles WHERE image = ? LIMIT 1");
         $stmt->execute([$candidate]);
         if ($stmt->fetchColumn() === false) {
@@ -2052,7 +2061,7 @@ function buildUniqueArticleImageUrl($title, $model = '') {
         }
     }
 
-    return buildFreeArticleImageUrl($baseSeed . '-' . uniqid('', true));
+    return buildFreeArticleImageUrl($baseSeed . '-' . uniqid('', true), $activeNiche);
 }
 
 function verifyAdminPassword($password) {

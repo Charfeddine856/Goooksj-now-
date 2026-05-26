@@ -1184,9 +1184,14 @@ $baseQuery['per_page'] = $perPage;
     $params = [];
     
     // Add niche filter (always include active niche for now, can be toggled later)
+    // Legacy articles may have niche_id NULL; treat those as the general niche.
     $activeNiche = getActiveNicheId();
     if ($activeNiche > 0) {
-        $clauses[] = "niche_id = :niche_id";
+        if ($activeNiche === 1) {
+            $clauses[] = "(niche_id = :niche_id OR niche_id IS NULL)";
+        } else {
+            $clauses[] = "niche_id = :niche_id";
+        }
         $params['niche_id'] = $activeNiche;
     }
     

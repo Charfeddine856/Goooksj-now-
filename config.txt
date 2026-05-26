@@ -1,0 +1,73 @@
+# AutoCar Niche Configuration Template
+
+# Basic site settings
+SITE_TITLE=AutoCar Niche
+ACTIVE_NICHE=general
+ADMIN_PASSWORD=change-me
+
+# SEO defaults
+SEO_HOME_TITLE=Best Auto Reviews and Tips
+SEO_HOME_DESCRIPTION=Discover the latest in automotive news, buying guides, and maintenance advice.
+SEO_ARTICLE_TITLE_SUFFIX= | AutoCar Niche
+SEO_DEFAULT_ROBOTS=index,follow
+SEO_DEFAULT_OG_IMAGE=
+SEO_TWITTER_SITE=@YourTwitterHandle
+SEO_IMAGE_ALT_SUFFIX=AutoCar Image
+SEO_IMAGE_TITLE_SUFFIX=AutoCar Photo
+
+# Translation settings
+AUTO_TRANSLATE_ENABLED=0
+AUTO_TRANSLATE_TARGET_LANGUAGE=ar
+
+# Fetch / crawler settings
+FETCH_TIMEOUT_SECONDS=12
+FETCH_RETRY_ATTEMPTS=3
+FETCH_RETRY_BACKOFF_MS=350
+QUEUE_SOURCE_COOLDOWN_SECONDS=180
+FETCH_USER_AGENT=Mozilla/5.0 (compatible; VitoBot/1.0; +https://example.com/bot)
+
+# Ads settings
+ADS_ENABLED=0
+ADS_INJECTION_MODE=smart
+ADS_PARAGRAPH_INTERVAL=4
+ADS_MAX_UNITS_PER_ARTICLE=2
+ADS_MIN_WORDS_BEFORE_FIRST_INJECTION=180
+ADS_MIN_ARTICLE_WORDS=420
+ADS_LABEL_TEXT=Sponsored
+ADS_HTML_CODE=<div class="ad-unit-inner">Place your ad code here</div>
+
+# Pipeline and scheduling
+MIN_WORDS_FROM=300
+MIN_WORDS_TO=3000
+URL_CACHE_TTL_SECONDS=900
+WORKFLOW_BATCH_SIZE=8
+QUEUE_RETRY_DELAY_SECONDS=60
+QUEUE_MAX_ATTEMPTS=3
+AUTO_PUBLISH_INTERVAL_MINUTES=180
+AUTO_AI_ENABLED=1
+AUTO_PUBLISH_INTERVAL_SECONDS_FROM=300
+AUTO_PUBLISH_INTERVAL_SECONDS_TO=10800
+
+# Niche automation
+SMART_ACTIVE_NICHE=general
+SMART_AUTO_TITLE_MODE=template
+SMART_AUTO_TITLE_MIN_YEAR_OFFSET=0
+SMART_AUTO_TITLE_MAX_YEAR_OFFSET=1
+SMART_SOURCE_PREFILL_NICHE=general
+SMART_SOURCE_PREFILL_SELECTED_NICHES=general
+
+# Optional tracking and verification
+GOOGLE_ANALYTICS_ID=
+GOOGLE_TAG_MANAGER_ID=
+GOOGLE_SITE_VERIFICATION=
+BING_SITE_VERIFICATION=
+META_PIXEL_ID=
+CUSTOM_HEAD_SCRIPTS=
+CUSTOM_BODY_SCRIPTS=
+ADS_TXT=
+
+# Notes:
+# - Use the values above to mirror the settings available in admin.php.
+# - For any URLs, make sure they are full valid URLs starting with http:// or https://.
+# - If you want to keep the default niche, use ACTIVE_NICHE=general.
+# - This file is a template; edit it locally and copy values into config.php or admin settings as needed.
