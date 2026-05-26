@@ -1,11 +1,22 @@
 # AutoCar Niche Configuration Template
+# Use this file to store niche-specific content signals and example sources.
+# Each block below represents a niche with:
+# - NAME / nameniche
+# - BRANDS
+# - MODELS
+# - SEO_MODIFIERS
+# - AUDIENCE_SEGMENTS
+# - ANGLES
+# - TEMPLATES
+# - RSS_SOURCES
+# - WEB_SOURCES
 
-# Basic site settings
+# Global settings
 SITE_TITLE=AutoCar Niche
 ACTIVE_NICHE=general
 ADMIN_PASSWORD=change-me
 
-# SEO defaults
+# General SEO Defaults
 SEO_HOME_TITLE=Best Auto Reviews and Tips
 SEO_HOME_DESCRIPTION=Discover the latest in automotive news, buying guides, and maintenance advice.
 SEO_ARTICLE_TITLE_SUFFIX= | AutoCar Niche
@@ -56,18 +67,75 @@ SMART_AUTO_TITLE_MAX_YEAR_OFFSET=1
 SMART_SOURCE_PREFILL_NICHE=general
 SMART_SOURCE_PREFILL_SELECTED_NICHES=general
 
-# Optional tracking and verification
-GOOGLE_ANALYTICS_ID=
-GOOGLE_TAG_MANAGER_ID=
-GOOGLE_SITE_VERIFICATION=
-BING_SITE_VERIFICATION=
-META_PIXEL_ID=
-CUSTOM_HEAD_SCRIPTS=
-CUSTOM_BODY_SCRIPTS=
-ADS_TXT=
+# Niche: general
+NICHE_GENERAL_NAME=General Automotive
+NICHE_GENERAL_BRANDS=Toyota,Ford,Chevrolet,Honda,Nissan
+NICHE_GENERAL_MODELS=Corolla,Mustang,Accord,Camry,Altima
+NICHE_GENERAL_SEO_MODIFIERS=best,latest,affordable,reviewed,2026
+NICHE_GENERAL_AUDIENCE_SEGMENTS=first-time buyers,car owners,enthusiasts,shopper
+NICHE_GENERAL_ANGLES=review,comparison,buying guide,maintenance,news update
+NICHE_GENERAL_TEMPLATES=Best {brand} {model} for {segment}|Why {brand} {model} is the Best Choice for {segment}|{model} Review: {modifier} Performance in 2026
+NICHE_GENERAL_RSS_SOURCES=https://example.com/rss/cars,https://example.net/rss/auto-news
+NICHE_GENERAL_WEB_SOURCES=https://example.com/auto-news,https://example.net/cars
+
+# Niche: ev
+NICHE_EV_NAME=Electric Vehicles
+NICHE_EV_BRANDS=Tesla,Nissan,BMW,Hyundai,Chevrolet
+NICHE_EV_MODELS=Model 3,Leaf,i4,IONIQ 5,Bolt EV
+NICHE_EV_SEO_MODIFIERS=long range,fast charging,eco-friendly,affordable EV,2026 EV
+NICHE_EV_AUDIENCE_SEGMENTS=green buyers,commuters,families,early adopters
+NICHE_EV_ANGLES=range test,charging guide,cost savings,EV myths,technology review
+NICHE_EV_TEMPLATES=Top {brand} {model} for {segment}|How {brand} {model} performs on long trips|Electric {model}: {modifier} in real life
+NICHE_EV_RSS_SOURCES=https://example.com/rss/ev-news,https://example.net/rss/electric-cars
+NICHE_EV_WEB_SOURCES=https://example.com/ev-reviews,https://example.net/electric-vehicle-guides
+
+# Niche: motorcycles
+NICHE_MOTORCYCLES_NAME=Motorcycles
+NICHE_MOTORCYCLES_BRANDS=Honda,Yamaha,Kawasaki,Ducati,Harley-Davidson
+NICHE_MOTORCYCLES_MODELS=CBR500R,MT-07,Ninja 650,Panigale V2,Street 750
+NICHE_MOTORCYCLES_SEO_MODIFIERS=best adventure,motorcycle touring,city commuter,sport bike,2026 ride
+NICHE_MOTORCYCLES_AUDIENCE_SEGMENTS=urban riders,weekend adventurers,track enthusiasts,new riders
+NICHE_MOTORCYCLES_ANGLES=ride review,safety tips,maintenance guide,gear recommendations,performance comparison
+NICHE_MOTORCYCLES_TEMPLATES=Why the {brand} {model} is perfect for {segment}|{model} Review: {modifier} handling and comfort|Motorcycle {model} Buying Guide for {segment}
+NICHE_MOTORCYCLES_RSS_SOURCES=https://example.com/rss/motorcycles,https://example.net/rss/bike-news
+NICHE_MOTORCYCLES_WEB_SOURCES=https://example.com/bike-reviews,https://example.net/motorcycle-guides
+
+# Niche: auto-mobile
+NICHE_AUTO_MOBILE_NAME=Auto Mobile
+NICHE_AUTO_MOBILE_BRANDS=Mercedes,BMW,Audi,Lexus,Volvo
+NICHE_AUTO_MOBILE_MODELS=GLE,5 Series,A6,RX,XC90
+NICHE_AUTO_MOBILE_SEO_MODIFIERS=luxury,high-tech,comfort,high performance,2026 trends
+NICHE_AUTO_MOBILE_AUDIENCE_SEGMENTS=luxury buyers,executives,tech-savvy drivers,car collectors
+NICHE_AUTO_MOBILE_ANGLES=luxury review,advanced features,ride comfort,design trends,performance analysis
+NICHE_AUTO_MOBILE_TEMPLATES=The Best {brand} {model} for {segment}|Luxury {model} Review: {modifier} new features|Why {brand} {model} is the premium choice for {segment}
+NICHE_AUTO_MOBILE_RSS_SOURCES=https://example.com/rss/luxury-cars,https://example.net/rss/premium-auto
+NICHE_AUTO_MOBILE_WEB_SOURCES=https://example.com/luxury-car-news,https://example.net/auto-mobile-insights
+
+# Niche: cuisine
+NICHE_CUISINE_NAME=Cuisine
+NICHE_CUISINE_BRANDS=KitchenAid,Le Creuset,Ninja,Instant Pot,Cuisinart
+NICHE_CUISINE_MODELS=Air Fryer,Pressure Cooker,Stand Mixer,Blender,Grill
+NICHE_CUISINE_SEO_MODIFIERS=easy recipes,quick meals,gourmet at home,healthy cooking,meal prep
+NICHE_CUISINE_AUDIENCE_SEGMENTS=home cooks,food lovers,busy families,meal preppers
+NICHE_CUISINE_ANGLES=recipe ideas,cooking hacks,kitchen gear reviews,meal planning,taste tests
+NICHE_CUISINE_TEMPLATES=How to cook {modifier} meals with {brand} {model}|{model} Recipe Guide for {segment}|Top {brand} kitchen tools for easy cooking
+NICHE_CUISINE_RSS_SOURCES=https://example.com/rss/food,https://example.net/rss/cuisine
+NICHE_CUISINE_WEB_SOURCES=https://example.com/recipes,https://example.net/food-guides
+
+# Niche: eran-money
+NICHE_ERAN_MONEY_NAME=Eran Money
+NICHE_ERAN_MONEY_BRANDS=Mastercard,Visa,PayPal,Robinhood,Acorns
+NICHE_ERAN_MONEY_MODELS=credit cards,investment apps,savings accounts,crypto wallets,loan services
+NICHE_ERAN_MONEY_SEO_MODIFIERS=best rates,top returns,smart saving,financial tips,2026 finance
+NICHE_ERAN_MONEY_AUDIENCE_SEGMENTS=young professionals,investors,budget-conscious,small business owners
+NICHE_ERAN_MONEY_ANGLES=moneymanagement,investing advice,financial planning,credit score tips,wealth building
+NICHE_ERAN_MONEY_TEMPLATES=Best {brand} {model} for {segment}|{model} Money Guide: {modifier} strategy|How to choose the right {model} for {segment}
+NICHE_ERAN_MONEY_RSS_SOURCES=https://example.com/rss/finance,https://example.net/rss/business
+NICHE_ERAN_MONEY_WEB_SOURCES=https://example.com/money-guides,https://example.net/personal-finance
 
 # Notes:
-# - Use the values above to mirror the settings available in admin.php.
-# - For any URLs, make sure they are full valid URLs starting with http:// or https://.
-# - If you want to keep the default niche, use ACTIVE_NICHE=general.
-# - This file is a template; edit it locally and copy values into config.php or admin settings as needed.
+# - Copy any niche block and adjust values for a new niche slug.
+# - Replace commas with real brand/model/source lists for your use case.
+# - Use TEMPLATE placeholders: {brand}, {model}, {segment}, {modifier}.
+# - This file is a manual template. If your app doesn't parse it automatically,
+#   use it as a reference when populating admin settings or niche data.
