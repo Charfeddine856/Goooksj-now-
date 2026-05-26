@@ -1767,6 +1767,21 @@ $webSql .= " ORDER BY id DESC";
         exit;
     }
 
+    if (isset($_POST['refresh_config_file'])) {
+        $beforeFingerprint = getSetting('config_txt_fingerprint', '');
+        $configFileResult = loadConfigFileIfChanged($pdo, __DIR__ . '/config.txt');
+        $afterFingerprint = getSetting('config_txt_fingerprint', '');
+        if ($afterFingerprint !== '' && $afterFingerprint !== $beforeFingerprint) {
+            $_SESSION['flash_message'] = 'config.txt reloaded and settings applied.';
+            $_SESSION['flash_type'] = 'success';
+        } else {
+            $_SESSION['flash_message'] = 'No changes detected in config.txt or the file was not found.';
+            $_SESSION['flash_type'] = 'info';
+        }
+        header('Location: admin.php#config-management');
+        exit;
+    }
+
     $webStmt = $pdo->prepare($webSql);
 foreach ($webParams as $key => $value) {
     $webStmt->bindValue(':' . $key, $value, PDO::PARAM_STR);
@@ -1788,6 +1803,15 @@ foreach ($settingsParams as $key => $value) {
 }
 $settingsStmt->execute();
 $settingsRows = $settingsStmt->fetchAll(PDO::FETCH_ASSOC);
+
+$configFilePath = __DIR__ . '/config.txt';
+$configPreview = is_file($configFilePath) ? file_get_contents($configFilePath) : '';
+$configContents = loadConfigTxt($configFilePath);
+$configGlobalRssCount = count($configContents['sources']['rss'] ?? []);
+$configGlobalWebCount = count($configContents['sources']['web'] ?? []);
+$configGlobalSettingsCount = count($configContents['settings'] ?? []);
+$configNichesCount = count($configContents['niches'] ?? []);
+$configFingerprint = $configContents['fingerprint'] ?? '';
 ?>
 <!DOCTYPE html>
 <html lang="en">

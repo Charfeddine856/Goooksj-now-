@@ -18,12 +18,13 @@ function parseConfigList($value, array $separators = [',']) {
 
 function loadConfigTxt($path) {
     if (!is_file($path) || !is_readable($path)) {
-        return ['settings' => [], 'niches' => []];
+        return ['settings' => [], 'niches' => [], 'sources' => ['rss' => [], 'web' => []]];
     }
 
     $lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
     $settings = [];
     $niches = [];
+    $sources = ['rss' => [], 'web' => []];
 
     foreach ($lines as $line) {
         $line = trim((string)$line);
@@ -48,19 +49,24 @@ function loadConfigTxt($path) {
                 $niches[$slug] = ['slug' => $slug];
             }
 
-            if (in_array($field, ['rss_sources', 'web_sources', 'brands', 'models', 'seo_modifiers', 'audience_segments', 'angles'], true)) {
-                $niches[$slug][$field] = parseConfigList($value, [',']);
-            } elseif ($field === 'templates') {
+            if (in_array($field, ['rss_sources', 'web_sources', 'brands', 'models', 'seo_modifiers', 'audience_segments', 'angles', 'templates', 'fixed_titles'], true)) {
                 $niches[$slug][$field] = parseConfigList($value, [',', '|']);
             } else {
                 $niches[$slug][$field] = $value;
             }
         } else {
-            $settings[normalizeConfigKey($key)] = $value;
+            $normalized = normalizeConfigKey($key);
+            if (in_array($normalized, ['rss_sources', 'web_sources'], true)) {
+                $type = $normalized === 'rss_sources' ? 'rss' : 'web';
+                $sources[$type] = parseConfigList($value, [',', '|']);
+                $settings[$normalized] = implode('\n', $sources[$type]);
+            } else {
+                $settings[$normalized] = $value;
+            }
         }
     }
 
-    return ['settings' => $settings, 'niches' => $niches];
+    return ['settings' => $settings, 'niches' => $niches, 'sources' => $sources];
 }
 
 function applyConfigSettings(PDO $pdo, array $settings) {
@@ -110,11 +116,38 @@ function syncConfigNiches(PDO $pdo, array $niches) {
             'audience_segments' => 'auto_title_audiences',
             'angles' => 'auto_title_angles',
             'templates' => 'auto_title_templates',
+            'fixed_titles' => 'auto_title_fixed_titles',
+            'mode' => 'auto_title_mode',
+            'min_year_offset' => 'auto_title_min_year_offset',
+            'max_year_offset' => 'auto_title_max_year_offset',
         ];
         foreach ($nicheSettingsMap as $field => $settingKey) {
             if (isset($nicheData[$field])) {
-                $insertValue = implode("\n", (array)$nicheData[$field]);
+                $insertValue = in_array($field, ['brands', 'models', 'seo_modifiers', 'audience_segments', 'angles', 'templates', 'fixed_titles'], true)
+                    ? implode("\n", (array)$nicheData[$field])
+                    : (string)$nicheData[$field];
                 $updateSettingStmt->execute(['niche.' . $slug . '.' . $settingKey, $insertValue]);
+            }
+        }
+    }
+}
+
+function syncConfigSources(PDO $pdo, array $sources) {
+    if (isset($sources['rss']) && is_array($sources['rss'])) {
+        $rssStmt = $pdo->prepare("INSERT OR IGNORE INTO rss_sources (url) VALUES (?)");
+        foreach ($sources['rss'] as $url) {
+            $url = trim((string)$url);
+            if ($url !== '') {
+                $rssStmt->execute([$url]);
+            }
+        }
+    }
+    if (isset($sources['web']) && is_array($sources['web'])) {
+        $webStmt = $pdo->prepare("INSERT OR IGNORE INTO web_sources (url) VALUES (?)");
+        foreach ($sources['web'] as $url) {
+            $url = trim((string)$url);
+            if ($url !== '') {
+                $webStmt->execute([$url]);
             }
         }
     }
@@ -130,7 +163,7 @@ function getConfigFileFingerprint($path) {
 function loadConfigFileIfChanged(PDO $pdo, $path) {
     $fingerprint = getConfigFileFingerprint($path);
     if ($fingerprint === null) {
-        return ['settings' => [], 'niches' => []];
+        return ['settings' => [], 'niches' => [], 'sources' => ['rss' => [], 'web' => []]];
     }
 
     $stmt = $pdo->prepare("SELECT value FROM settings WHERE key = 'config_txt_fingerprint' LIMIT 1");
@@ -138,12 +171,13 @@ function loadConfigFileIfChanged(PDO $pdo, $path) {
     $storedFingerprint = $stmt->fetchColumn();
 
     if ($storedFingerprint === $fingerprint) {
-        return ['settings' => [], 'niches' => []];
+        return ['settings' => [], 'niches' => [], 'sources' => ['rss' => [], 'web' => []]];
     }
 
     $configFile = loadConfigTxt($path);
     applyConfigSettings($pdo, $configFile['settings']);
     syncConfigNiches($pdo, $configFile['niches']);
+    syncConfigSources($pdo, $configFile['sources']);
     $stmt = $pdo->prepare("INSERT INTO settings (key, value) VALUES ('config_txt_fingerprint', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value");
     $stmt->execute([$fingerprint]);
 
@@ -219,439 +253,7 @@ foreach ($defaultNiches as [$slug, $name, $description]) {
     $insertNicheStmt->execute([$slug, $name, $description]);
 }
 
-$defaultNicheSources = [
-    'general' => [
-        'rss' => [
-            'https://www.caranddriver.com/rss/all.xml',
-            'https://www.autoblog.com/rss.xml',
-            'https://www.motortrend.com/feeds/all/',
-            'https://www.thetruthaboutcars.com/feed/',
-            'https://www.carscoops.com/feed/',
-            'https://www.autocar.co.uk/rss',
-            'https://www.topgear.com/car-news/rss.xml',
-            'https://www.carmagazine.co.uk/rss/',
-            'https://www.roadandtrack.com/rss/all.xml',
-            'https://www.thedrive.com/rss/all',
-            'https://jalopnik.com/rss',
-            'https://www.autoevolution.com/rss.xml',
-            'https://www.cars.com/news/rss/',
-            'https://www.edmunds.com/feeds/rss/reviews.xml',
-            'https://www.whichcar.com.au/rss.xml'
-        ],
-        'web' => ['https://www.autoblog.com/news/'],
-    ],
-    'ev' => [
-        'rss' => [
-            'https://insideevs.com/rss',
-            'https://electrek.co/feed/',
-            'https://cleantechnica.com/tag/electric-vehicles/feed/',
-            'https://evannex.com/blogs/news.atom',
-            'https://chargedevs.com/feed/',
-            'https://www.greencarreports.com/rss',
-            'https://www.teslarati.com/feed/',
-            'https://www.ev-database.org/rss',
-            'https://www.autocar.co.uk/car-news/electric-cars/rss',
-            'https://www.carscoops.com/tag/electric-cars/feed/',
-            'https://electrive.com/feed/',
-            'https://evmagz.com/feed/',
-            'https://pluginamerica.org/blog/feed/',
-            'https://chargedevs.com/newswire/feed/',
-            'https://www.energy.gov/eere/electricvehicles/rss.xml'
-        ],
-        'web' => [
-            'https://insideevs.com/news/',
-            'https://electrek.co/',
-            'https://www.greencarreports.com/news',
-            'https://www.teslarati.com/',
-            'https://www.autocar.co.uk/car-news/electric-cars',
-            'https://www.carscoops.com/tag/electric-cars/',
-            'https://cleantechnica.com/tag/electric-vehicles/',
-            'https://chargedevs.com/newswire/',
-            'https://electrive.com/',
-            'https://evmagz.com/'
-        ],
-    ],
-    'motorcycles' => [
-        'rss' => [
-            'https://www.motorcyclenews.com/rss/',
-            'https://www.visordown.com/rss.xml',
-            'https://www.rideapart.com/rss/',
-            'https://www.cycleworld.com/arc/outboundfeeds/rss/',
-            'https://www.motorcycle.com/feeds/all/',
-            'https://www.bennetts.co.uk/bikesocial/rss',
-            'https://www.advrider.com/feed/',
-            'https://www.revzilla.com/common-tread/rss',
-            'https://www.webbikeworld.com/feed/',
-            'https://www.motousher.com/feed/',
-            'https://www.motorcyclecruiser.com/feed/',
-            'https://www.advpulse.com/feed/',
-            'https://www.bikeexif.com/feed',
-            'https://www.returnofthecaferacers.com/feed/',
-            'https://www.totalmotorcycle.com/feed/'
-        ],
-        'web' => [
-            'https://www.motorcyclenews.com/news/',
-            'https://www.visordown.com/news',
-            'https://www.rideapart.com/news/',
-            'https://www.cycleworld.com/motorcycle-news/',
-            'https://www.motorcycle.com/news',
-            'https://www.bennetts.co.uk/bikesocial/news-and-views',
-            'https://www.advrider.com/f/',
-            'https://www.revzilla.com/common-tread',
-            'https://www.webbikeworld.com/',
-            'https://www.advpulse.com/'
-        ],
-    ],
-    'auto-mobile' => [
-        'rss' => [
-            'https://www.autonews.com/section/rss',
-            'https://www.carwow.co.uk/blog/rss.xml',
-            'https://www.whatcar.com/news/rss',
-            'https://www.driving.co.uk/feed/',
-            'https://www.carsguide.com.au/news/rss',
-            'https://www.autoexpress.co.uk/rss.xml',
-            'https://www.cnet.com/roadshow/news/rss/',
-            'https://www.arenaev.com/rss-news-reviews.php3',
-            'https://www.techradar.com/rss/news/car-tech',
-            'https://www.wired.com/feed/tag/transport/latest/rss',
-            'https://www.theverge.com/rss/transportation/index.xml',
-            'https://www.engadget.com/transportation/rss.xml',
-            'https://www.digitaltrends.com/cars/feed/',
-            'https://arstechnica.com/cars/feed/',
-            'https://www.zdnet.com/topic/transportation/rss.xml'
-        ],
-        'web' => [
-            'https://www.autonews.com/',
-            'https://www.carwow.co.uk/news',
-            'https://www.whatcar.com/news',
-            'https://www.autoexpress.co.uk/car-news',
-            'https://www.carsguide.com.au/car-news',
-            'https://www.cnet.com/roadshow/',
-            'https://www.digitaltrends.com/cars/',
-            'https://www.theverge.com/transportation',
-            'https://arstechnica.com/cars/',
-            'https://www.techradar.com/news/car-tech'
-        ]
-    ],
-    'cuisine' => [
-        'rss' => [
-            'https://www.seriouseats.com/rss',
-            'https://www.bonappetit.com/feed/rss',
-            'https://www.epicurious.com/services/rss/feeds/all',
-            'https://www.foodnetwork.com/content/food-com/en/rss/all-content.rss',
-            'https://www.simplyrecipes.com/feed/',
-            'https://www.delish.com/rss/all.xml',
-            'https://www.thekitchn.com/rss',
-            'https://minimalistbaker.com/feed/',
-            'https://cookieandkate.com/feed/',
-            'https://www.smittenkitchen.com/feed/',
-            'https://www.foodandwine.com/feed',
-            'https://www.allrecipes.com/feed/',
-            'https://www.loveandlemons.com/feed/',
-            'https://www.feastingathome.com/feed/',
-            'https://www.halfbakedharvest.com/feed/'
-        ],
-        'web' => [
-            'https://www.seriouseats.com/',
-            'https://www.bonappetit.com/',
-            'https://www.epicurious.com/',
-            'https://www.foodnetwork.com/',
-            'https://www.simplyrecipes.com/',
-            'https://www.delish.com/',
-            'https://www.thekitchn.com/',
-            'https://minimalistbaker.com/',
-            'https://cookieandkate.com/',
-            'https://www.foodandwine.com/'
-        ]
-    ],
-    'eran-money' => [
-        'rss' => [
-            'https://www.investopedia.com/feedbuilder/feed/getfeed?feedName=rss_articles',
-            'https://www.nerdwallet.com/blog/feed/',
-            'https://www.marketwatch.com/rss/topstories',
-            'https://www.cnbc.com/id/100003114/device/rss/rss.html',
-            'https://www.ft.com/?format=rss',
-            'https://www.economist.com/finance-and-economics/rss.xml',
-            'https://www.fool.com/feeds/index.aspx',
-            'https://www.kiplinger.com/rss.xml',
-            'https://www.moneycrashers.com/feed/',
-            'https://www.businessinsider.com/rss',
-            'https://www.wsj.com/xml/rss/3_7031.xml',
-            'https://www.bloomberg.com/feed/podcast/etf-report.xml',
-            'https://feeds.a.dj.com/rss/RSSMarketsMain.xml',
-            'https://www.forbes.com/money/feed/',
-            'https://www.morningstar.com/feeds/rss/articles'
-        ],
-        'web' => [
-            'https://www.investopedia.com/',
-            'https://www.nerdwallet.com/',
-            'https://www.marketwatch.com/',
-            'https://www.cnbc.com/personal-finance/',
-            'https://www.ft.com/markets',
-            'https://www.economist.com/finance-and-economics',
-            'https://www.fool.com/',
-            'https://www.kiplinger.com/',
-            'https://www.moneycrashers.com/',
-            'https://www.forbes.com/money/'
-        ]
-    ],
-];
-$getNicheIdStmt = $pdo->prepare("SELECT id FROM niches WHERE slug = ? LIMIT 1");
-$insertNicheSourceStmt = $pdo->prepare("INSERT OR IGNORE INTO niche_sources (niche_id, type, url) VALUES (?, ?, ?)");
-foreach ($defaultNicheSources as $slug => $groups) {
-    $getNicheIdStmt->execute([$slug]);
-    $nicheId = (int)$getNicheIdStmt->fetchColumn();
-    if ($nicheId <= 0) continue;
-    foreach (['rss', 'web'] as $type) {
-        foreach ($groups[$type] as $url) {
-            $insertNicheSourceStmt->execute([$nicheId, $type, $url]);
-        }
-    }
-}
 
-$nicheAutoTitleDefaults = [
-    'general' => [
-        'auto_title_fixed_titles' => "Best Cars for Daily Driving in {year}
-Top Family SUVs Worth Buying in {year}
-Sedan vs SUV: Which One Fits You in {year}
-Most Reliable Used Cars Guide for {year}
-New Car Buying Checklist for First-Time Buyers",
-        'auto_title_brands' => "Toyota
-Honda
-Ford
-Chevrolet
-Nissan
-BMW
-Mercedes-Benz
-Audi
-Kia
-Hyundai",
-        'auto_title_models' => "Sedan
-SUV
-Crossover
-Truck
-Hybrid
-Electric Car
-Luxury Sedan
-Family SUV
-Compact Car
-Sports Car",
-        'auto_title_modifiers' => "Review
-Buying Guide
-Specs Breakdown
-Comparison
-Ownership Cost",
-        'auto_title_audiences' => "First-Time Buyers
-Family Drivers
-Commuters
-Performance Enthusiasts
-Budget Shoppers",
-        'auto_title_angles' => "Real-World Performance
-Fuel Economy Insights
-Safety and Technology
-Maintenance Planning
-Value for Money",
-        'auto_title_templates' => "{year} {brand} {model} {modifier}: {angle} for {audience}",
-    ],
-    'ev' => [
-        'auto_title_fixed_titles' => "Best Electric SUVs with Long Range in {year}
-Home EV Charging Setup Guide for Beginners
-EV Battery Health Tips That Actually Work
-Fast Charging Comparison: Which EV Wins in {year}
-Used EV Buying Checklist for Smart Buyers",
-        'auto_title_brands' => "Tesla
-BYD
-Hyundai
-Kia
-BMW
-Mercedes-EQ
-Rivian
-Lucid
-Volkswagen
-Volvo",
-        'auto_title_models' => "Electric Sedan
-Electric SUV
-Long-Range EV
-City EV
-Premium EV
-Charging Setup
-Battery Health Plan
-Home Charging Guide
-Fleet EV
-Used EV",
-        'auto_title_modifiers' => "Review
-Charging Guide
-Range Test
-Comparison
-Ownership Guide",
-        'auto_title_audiences' => "EV Beginners
-Daily Commuters
-Road Trip Drivers
-Fleet Managers
-Tech-Savvy Buyers",
-        'auto_title_angles' => "Charging Speed and Network
-Range in Real Conditions
-Battery Longevity
-Software and Smart Features
-Total Ownership Cost",
-        'auto_title_templates' => "{year} {brand} {model} {modifier}: {angle} for {audience}",
-    ],
-    'motorcycles' => [
-        'auto_title_fixed_titles' => "Best Beginner Motorcycles to Buy in {year}
-Adventure Bike Comparison for Long Rides
-Motorcycle Safety Gear Checklist for New Riders
-City Commuter Bikes with Best Fuel Economy
-Sport Bike vs Naked Bike: Complete {year} Guide",
-        'auto_title_brands' => "Honda
-Yamaha
-Kawasaki
-Suzuki
-Ducati
-BMW Motorrad
-KTM
-Triumph
-Harley-Davidson
-Royal Enfield",
-        'auto_title_models' => "Sport Bike
-Adventure Bike
-Naked Bike
-Touring Bike
-Cruiser
-Scooter
-Beginner Bike
-Commuter Bike
-Dual-Sport
-Retro Bike",
-        'auto_title_modifiers' => "Review
-Riding Guide
-Comparison
-Maintenance Plan
-Buying Checklist",
-        'auto_title_audiences' => "New Riders
-Daily Riders
-Weekend Riders
-Long-Distance Riders
-City Commuters",
-        'auto_title_angles' => "Comfort and Ergonomics
-Engine and Performance
-Fuel Efficiency
-Safety Gear Setup
-Maintenance and Reliability",
-        'auto_title_templates' => "{year} {brand} {model} {modifier}: {angle} for {audience}",
-    ],
-    'auto-mobile' => [
-        'auto_title_fixed_titles' => "Top Car Tech Features You Should Use in {year}
-Connected Car Apps That Improve Daily Driving
-Smart Mobility Trends Reshaping Transportation
-Best In-Car Infotainment Systems Compared
-Vehicle Safety Tech Explained for Everyday Drivers",
-        'auto_title_brands' => "Toyota
-Honda
-Hyundai
-Kia
-Ford
-Chevrolet
-Nissan
-Mazda
-BMW
-Mercedes",
-        'auto_title_models' => "Sedan
-SUV
-Crossover
-Pickup
-Hatchback
-Hybrid SUV
-Electric Sedan",
-        'auto_title_modifiers' => "Review
-Specs
-Price
-Comparison
-Buying Guide",
-        'auto_title_audiences' => "Daily Commuters
-Family Drivers
-First-Time Buyers
-Tech Drivers",
-        'auto_title_angles' => "Real-World Fuel Economy
-Comfort and Daily Use
-Technology and Safety
-Maintenance and Ownership Cost",
-        'auto_title_templates' => "{year} {brand} {model} {modifier}: {angle} for {audience}",
-    ],
-    'cuisine' => [
-        'auto_title_fixed_titles' => "Easy Weeknight Dinner Plan for Busy Families
-Healthy Meal Prep Guide for Beginners
-Budget-Friendly Recipes You Can Cook Fast
-Best Comfort Food Recipes to Try This Week
-Step-by-Step Home Cooking Guide for New Cooks",
-        'auto_title_brands' => "Italian
-French
-Japanese
-Indian
-Turkish
-Mexican
-Mediterranean",
-        'auto_title_models' => "Home Recipe
-Street Food
-Healthy Meal
-Quick Dinner
-Dessert",
-        'auto_title_modifiers' => "Recipe
-Guide
-Tips
-Comparison
-Beginner Guide",
-        'auto_title_audiences' => "Home Cooks
-Beginners
-Busy Families
-Food Lovers",
-        'auto_title_angles' => "Step-by-Step Cooking Method
-Ingredient Substitutions
-Serving Ideas
-Budget-Friendly Plan",
-        'auto_title_templates' => "{year} {brand} {model} {modifier}: {angle} for {audience}",
-    ],
-    'eran-money' => [
-        'auto_title_fixed_titles' => "Simple Budget Plan to Save More Every Month
-Beginner Investing Roadmap for Long-Term Growth
-Debt Payoff Strategy That Works in {year}
-Side Hustle Ideas to Increase Monthly Income
-Personal Finance Checklist for Financial Stability",
-        'auto_title_brands' => "Personal Finance
-Investing
-Freelancing
-Small Business
-Side Hustle",
-        'auto_title_models' => "Savings Plan
-Budget Strategy
-Income Plan
-Investment Plan
-Debt Plan",
-        'auto_title_modifiers' => "Guide
-Checklist
-Comparison
-Roadmap
-Framework",
-        'auto_title_audiences' => "Beginners
-Young Professionals
-Families
-Freelancers",
-        'auto_title_angles' => "Risk and Return Balance
-Monthly Execution Plan
-Long-Term Growth Strategy
-Cashflow Optimization",
-        'auto_title_templates' => "{year} {brand} {model} {modifier}: {angle} for {audience}",
-    ],
-];
-$insertSettingStmt = $pdo->prepare("INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)");
-foreach ($nicheAutoTitleDefaults as $slug => $settings) {
-    $insertSettingStmt->execute(['niche.' . $slug . '.auto_title_mode', 'template']);
-    $insertSettingStmt->execute(['niche.' . $slug . '.auto_title_min_year_offset', '0']);
-    $insertSettingStmt->execute(['niche.' . $slug . '.auto_title_max_year_offset', '1']);
-    $insertSettingStmt->execute(['niche.' . $slug . '.auto_title_fixed_titles', '']);
-    foreach ($settings as $k => $v) {
-        $insertSettingStmt->execute(['niche.' . $slug . '.' . $k, $v]);
-    }
-}
 
 // Tags system for better SEO and filtering
 $pdo->exec("CREATE TABLE IF NOT EXISTS tags (
@@ -772,6 +374,7 @@ try {
 // إعدادات افتراضية
 $defaults = [
     'site_title' => SITE_TITLE,
+    'active_niche' => 'general',
     'min_words' => '3000',
     'auto_publish' => '1',
     'daily_limit' => '5',
@@ -790,19 +393,8 @@ $defaults = [
     'queue_max_attempts' => '3',
     'queue_source_cooldown_seconds' => '180',
     'visit_excluded_ips' => '',
-    // translation settings
     'auto_translate_enabled' => '0',
     'auto_translate_target_language' => '',
-    'auto_title_mode' => 'template',
-    'auto_title_min_year_offset' => '0',
-    'auto_title_max_year_offset' => '1',
-    'auto_title_brands' => "Toyota\nBMW\nMercedes\nAudi\nPorsche\nTesla\nHyundai\nKia\nFord\nNissan\nVolvo\nLexus",
-    'auto_title_models' => "SUV\nSedan\nCoupe\nEV Crossover\nHybrid SUV\nPerformance Hatchback\nElectric Sedan\nLuxury Wagon\nPremium Crossover",
-    'auto_title_modifiers' => "Review\nSpecs\nPrice\nComparison\nBuying Guide\nOwnership Cost",
-    'auto_title_audiences' => "Smart Buyers\nFirst-Time Premium Buyers\nTech-Focused Drivers\nFamily Buyers",
-    'auto_title_angles' => "Full Review and Buyer Guide\nLong-Term Ownership Analysis\nReal-World Efficiency Test\nDaily Driving Impression\nSmart Technology Deep Dive\nComparison and Value Breakdown\nReliability, Resale, and Total Cost Breakdown",
-    'auto_title_templates' => "{year} {brand} {model} {modifier}: {angle} for {audience}\n{year} {brand} {model} {modifier} — {angle} ({audience})\n{year} {brand} {model}: {modifier} + {angle}",
-    'auto_title_fixed_titles' => '',
     'seo_home_title' => SITE_TITLE,
     'seo_home_description' => 'Automotive reviews, guides, and practical car ownership tips.',
     'seo_article_title_suffix' => SITE_TITLE,
@@ -874,23 +466,4 @@ foreach ($default_tags as [$name, $description]) {
         ->execute([$name, $slug, $description]);
 }
 
-// مصادر RSS افتراضية
-$rss_defaults = [
-    'https://www.caranddriver.com/rss/all.xml',
-    'https://www.motor1.com/rss/news/all/',
-    'https://www.autoblog.com/rss.xml'
-];
-foreach ($rss_defaults as $url) {
-    $pdo->prepare("INSERT OR IGNORE INTO rss_sources (url) VALUES (?)")->execute([$url]);
-}
-
-
-$web_defaults = [
-    'https://www.caranddriver.com/news/',
-    'https://www.motor1.com/news/',
-    'https://www.autoblog.com/news/'
-];
-foreach ($web_defaults as $url) {
-    $pdo->prepare("INSERT OR IGNORE INTO web_sources (url) VALUES (?)")->execute([$url]);
-}
 ?>
