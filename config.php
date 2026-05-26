@@ -1,7 +1,72 @@
 <?php
 session_start();
+
+function normalizeConfigKey($key) {
+    return strtolower(str_replace(['-', ' '], ['_', '_'], trim((string)$key)));
+}
+
+function parseConfigList($value, array $separators = [',']) {
+    $value = trim((string)$value);
+    if ($value === '') {
+        return [];
+    }
+
+    $pattern = '/\s*(?:' . implode('|', array_map('preg_quote', $separators)) . ')\s*/';
+    $items = preg_split($pattern, $value);
+    return array_values(array_filter(array_map('trim', (array)$items), static fn($item) => $item !== ''));
+}
+
+function loadConfigTxt($path) {
+    if (!is_file($path) || !is_readable($path)) {
+        return ['settings' => [], 'niches' => []];
+    }
+
+    $lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    $settings = [];
+    $niches = [];
+
+    foreach ($lines as $line) {
+        $line = trim((string)$line);
+        if ($line === '' || str_starts_with($line, '#')) {
+            continue;
+        }
+
+        $parts = explode('=', $line, 2);
+        if (count($parts) !== 2) {
+            continue;
+        }
+
+        $key = trim($parts[0]);
+        $value = trim($parts[1]);
+        if (str_starts_with($key, 'NICHE_')) {
+            if (!preg_match('/^NICHE_([A-Z0-9_]+)_(.+)$/', $key, $matches)) {
+                continue;
+            }
+            $slug = str_replace('_', '-', strtolower($matches[1]));
+            $field = strtolower($matches[2]);
+            if (!isset($niches[$slug])) {
+                $niches[$slug] = ['slug' => $slug];
+            }
+
+            if (in_array($field, ['rss_sources', 'web_sources', 'brands', 'models', 'seo_modifiers', 'audience_segments', 'angles'], true)) {
+                $niches[$slug][$field] = parseConfigList($value, [',']);
+            } elseif ($field === 'templates') {
+                $niches[$slug][$field] = parseConfigList($value, [',', '|']);
+            } else {
+                $niches[$slug][$field] = $value;
+            }
+        } else {
+            $settings[normalizeConfigKey($key)] = $value;
+        }
+    }
+
+    return ['settings' => $settings, 'niches' => $niches];
+}
+
+$configFile = loadConfigTxt(__DIR__ . '/config.txt');
+
 define('DB_FILE', __DIR__ . '/data/data.db');
-define('SITE_TITLE', 'AutoCar Niche');
+define('SITE_TITLE', $configFile['settings']['site_title'] ?? 'AutoCar Niche');
 define('PASSWORD_HASH', '$2y$12$iFCL8jqvoVMbZBcRy3wY..IUJNTqFcIfNAtUZRKiY4pFSspOevkHi'); // admin123
 
 function db_connect() {
@@ -50,6 +115,56 @@ $pdo->exec("CREATE TABLE IF NOT EXISTS niche_sources (
     UNIQUE(niche_id, type, url),
     FOREIGN KEY(niche_id) REFERENCES niches(id) ON DELETE CASCADE
 )");
+
+$insertSettingStmt = $pdo->prepare("INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value");
+foreach ($configFile['settings'] as $key => $value) {
+    if ($key === 'admin_password') {
+        $key = 'admin_password_hash';
+        $value = password_hash($value, PASSWORD_DEFAULT);
+    }
+    $insertSettingStmt->execute([$key, $value]);
+}
+
+$insertNicheStmt = $pdo->prepare("INSERT OR IGNORE INTO niches (slug, name, description) VALUES (?, ?, ?)");
+$getNicheIdStmt = $pdo->prepare("SELECT id FROM niches WHERE slug = ? LIMIT 1");
+$insertNicheSourceStmt = $pdo->prepare("INSERT OR IGNORE INTO niche_sources (niche_id, type, url) VALUES (?, ?, ?)");
+
+foreach ($configFile['niches'] as $slug => $nicheData) {
+    $name = trim((string)($nicheData['name'] ?? '')) ?: ucwords(str_replace('-', ' ', $slug));
+    $description = trim((string)($nicheData['description'] ?? ''));
+    $insertNicheStmt->execute([$slug, $name, $description]);
+
+    $getNicheIdStmt->execute([$slug]);
+    $nicheId = (int)$getNicheIdStmt->fetchColumn();
+    if ($nicheId <= 0) {
+        continue;
+    }
+
+    foreach (['rss_sources' => 'rss', 'web_sources' => 'web'] as $field => $type) {
+        foreach ((array)($nicheData[$field] ?? []) as $url) {
+            if ($url !== '') {
+                $insertNicheSourceStmt->execute([$nicheId, $type, $url]);
+            }
+        }
+    }
+
+    $nicheSettingsMap = [
+        'brands' => 'auto_title_brands',
+        'models' => 'auto_title_models',
+        'seo_modifiers' => 'auto_title_modifiers',
+        'audience_segments' => 'auto_title_audiences',
+        'angles' => 'auto_title_angles',
+        'templates' => 'auto_title_templates',
+    ];
+    foreach ($nicheSettingsMap as $field => $settingKey) {
+        if (!empty($nicheData[$field])) {
+            $insertSettingStmt->execute([
+                'niche.' . $slug . '.' . $settingKey,
+                implode("\n", (array)$nicheData[$field])
+            ]);
+        }
+    }
+}
 
 // Default niches (ensure required niches exist on every install/update)
 $defaultNiches = [

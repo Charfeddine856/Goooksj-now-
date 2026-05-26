@@ -955,10 +955,15 @@ function mergeAndDeduplicateTitles(array ...$collections) {
 function runRssWorkflow($limit = null) {
     $pdo = db_connect();
     $nicheId = getActiveNicheId();
-    $sources = $pdo->prepare("SELECT url FROM niche_sources WHERE niche_id = ? AND type = 'rss' ORDER BY id DESC")->execute([$nicheId]) ?: [];
-    $sources = $pdo->prepare("SELECT url FROM niche_sources WHERE niche_id = ? AND type = 'rss' ORDER BY id DESC")->fetchAll(PDO::FETCH_COLUMN) ?: [];
-    // fallback to niche helpers which handle non-existent niches gracefully
-    $sources = getNicheRssSources() ?: [];
+    $activeNiche = getActiveNicheSlug();
+
+    $stmt = $pdo->prepare("SELECT url FROM niche_sources WHERE niche_id = ? AND type = 'rss' ORDER BY id DESC");
+    $stmt->execute([$nicheId]);
+    $sources = $stmt->fetchAll(PDO::FETCH_COLUMN) ?: [];
+    if (empty($sources)) {
+        $sources = getNicheRssSources($activeNiche) ?: [];
+    }
+
     $limit = $limit === null ? max(1, (int)getSetting('daily_limit', 5)) : max(1, (int)$limit);
     $batchSize = getSettingInt('workflow_batch_size', 8, 1, 30);
 
@@ -1015,9 +1020,8 @@ function runRssWorkflow($limit = null) {
 }
 
 function runWebWorkflow($limit = null) {
-    $pdo = db_connect();
-    // Use active niche sources instead of global web_sources
-    $sources = getNicheWebSources() ?: [];
+    $activeNiche = getActiveNicheSlug();
+    $sources = getNicheWebSources($activeNiche) ?: [];
     $limit = $limit === null ? max(1, (int)getSetting('daily_limit', 5)) : max(1, (int)$limit);
     $batchSize = getSettingInt('workflow_batch_size', 8, 1, 30);
 
@@ -2083,9 +2087,13 @@ function verifyAdminPassword($password) {
 }
 
 function getRandomIntro($title, array $nicheMeta = []) {
+    $slug = mb_strtolower((string)($nicheMeta['slug'] ?? ''), 'UTF-8');
     $nicheLabel = trim((string)($nicheMeta['label'] ?? ''));
-    $isCuisine = str_contains(mb_strtolower($nicheLabel, 'UTF-8'), 'food') || str_contains(mb_strtolower($nicheLabel, 'UTF-8'), 'cuisine');
-    $isHealth = str_contains(mb_strtolower($nicheLabel, 'UTF-8'), 'health');
+    $introContext = trim((string)($nicheMeta['intro_context'] ?? ''));
+    $isCuisine = str_contains($slug, 'cuisine') || str_contains(mb_strtolower($nicheLabel, 'UTF-8'), 'food');
+    $isHealth = str_contains($slug, 'health');
+    $isBusiness = str_contains($slug, 'business') || str_contains($nicheLabel, 'Business');
+    $isEV = $slug === 'ev' || str_contains($nicheLabel, 'Electric');
 
     $intros = [];
     if ($isCuisine) {
@@ -2096,9 +2104,21 @@ function getRandomIntro($title, array $nicheMeta = []) {
         ];
     } elseif ($isHealth) {
         $intros = [
-            "The $title is framed around real wellness benefits and practical steps that ordinary readers can apply.",
+            "The $title is framed around real wellness benefits and practical steps ordinary readers can use.",
             "With the $title, the focus is on evidence-based advice, easy-to-follow habits, and sustainable lifestyle improvements.",
             "This $title is tailored for people who want clear health guidance rather than vague motivational messaging.",
+        ];
+    } elseif ($isBusiness) {
+        $intros = [
+            "The $title is structured to separate signal from noise in a fast-moving business context.",
+            "This article looks beyond headlines to uncover the real strategy, risk, and financial implications behind the story.",
+            "For readers focused on opportunity and outcome, the $title outlines the practical decisions that matter most.",
+        ];
+    } elseif ($isEV) {
+        $intros = [
+            "The $title is evaluated through the lens of charging readiness, range confidence, and real-world efficiency.",
+            "This electric model is judged not just on specs, but on how well it supports daily routines and long-term ownership.",
+            "The $title is built for drivers who care about consistent range performance, software stability, and charging convenience.",
         ];
     } else {
         $intros = [
@@ -2109,7 +2129,63 @@ function getRandomIntro($title, array $nicheMeta = []) {
         ];
     }
 
+    if ($introContext !== '') {
+        $intros[] = "This article centers on {$introContext} so that the $title review is more useful for informed buyers.";
+    }
+
     return $intros[array_rand($intros)];
+}
+
+function getNicheWritingAngle(array $nicheMeta) {
+    $slug = mb_strtolower((string)$nicheMeta['slug'], 'UTF-8');
+    if ($slug === 'ev' || str_contains((string)$nicheMeta['label'], 'Electric')) {
+        return 'charging behavior, energy efficiency, and software maturity';
+    }
+    if ($slug === 'motorcycles') {
+        return 'riding dynamics, ergonomic fit, and control confidence';
+    }
+    if (str_contains($slug, 'cuisine') || str_contains((string)$nicheMeta['label'], 'Food')) {
+        return 'ingredient quality, recipe usefulness, and flavor consistency';
+    }
+    if (str_contains($slug, 'business') || str_contains((string)$nicheMeta['label'], 'Business')) {
+        return 'market relevance, financial clarity, and strategic decision-making';
+    }
+    return 'real ownership value, practical usability, and competitive positioning';
+}
+
+function buildNicheSeoKeywords($title, array $nicheMeta) {
+    $keywords = [
+        $title,
+        $title . ' review',
+        $title . ' best features',
+        $title . ' buying advice',
+        $title . ' reliability',
+        $title . ' pros and cons',
+        $title . ' vs competitors',
+    ];
+
+    $nicheLabel = trim((string)$nicheMeta['label']);
+    if ($nicheLabel !== '' && mb_strtolower($nicheLabel, 'UTF-8') !== 'general') {
+        $keywords[] = $nicheLabel . ' review';
+        $keywords[] = $nicheLabel . ' buying guide';
+    }
+
+    $topicContext = trim((string)$nicheMeta['intro_context']);
+    if ($topicContext !== '') {
+        $keywords[] = $title . ' ' . $topicContext;
+    }
+
+    return array_values(array_unique(array_filter(array_map('trim', $keywords))));
+}
+
+function getArticleExpansionLibrary($title, array $nicheMeta) {
+    $nicheLabel = trim((string)$nicheMeta['label']);
+
+    return [
+        "<p>Beyond specifications, the {$title} should be evaluated through lifecycle quality: software stability, service access, parts availability, and dealer competence. These ownership signals are especially important for {$nicheLabel} buyers who want lasting value rather than a good first impression.</p>",
+        "<p>A final strategic angle concerns resale narrative. Products that preserve a strong identity, avoid unnecessary complexity, and maintain predictable reliability tend to keep value better. The {$title} appears aligned with that principle by emphasizing balance instead of gimmicks.</p>",
+        "<p>From a product planning perspective, the {$title} signals where the brand may be heading next: stronger system integration, higher efficiency discipline, and a clearer user-first direction. Those are the kinds of improvements that matter for thoughtful {$nicheLabel} readers.</p>",
+    ];
 }
 
 function pickRandomFrom(array $items) {
@@ -2275,12 +2351,8 @@ function buildFaqSchemaScript($title, $isEV) {
     return "<script type='application/ld+json'>" . json_encode($schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "</script>";
 }
 
-function ensureMinimumWordCount($html, $title, $minimumWords = 2100) {
-    $expansionLibrary = [
-        "<p>Beyond specifications, the {$title} should be evaluated through lifecycle quality: software stability over updates, ease of service access, parts availability, and dealership competence. These factors rarely appear in launch headlines, but they shape ownership satisfaction in a decisive way. Buyers who prioritize this complete picture are usually the ones who feel most confident in their purchase years after delivery.</p>",
-        "<p>A final strategic angle concerns resale narrative. Vehicles that keep a clear identity, avoid over-complicated interfaces, and maintain predictable reliability tend to preserve value more effectively. The {$title} appears aligned with that principle by emphasizing balance rather than gimmicks, which is often the smarter long-term formula in a rapidly changing automotive market.</p>",
-        "<p>From a product-planning perspective, the {$title} also signals where the brand may be heading next: deeper integration between hardware and software, stronger efficiency discipline, and a clearer user-first philosophy. If this direction continues, future iterations could build on an already credible foundation while reducing the remaining trade-offs that naturally exist in every vehicle category.</p>"
-    ];
+function ensureMinimumWordCount($html, $title, $minimumWords = 2100, array $nicheMeta = []) {
+    $expansionLibrary = getArticleExpansionLibrary($title, $nicheMeta);
 
     $currentWords = str_word_count(strip_tags($html));
     $i = 0;
@@ -2293,23 +2365,15 @@ function ensureMinimumWordCount($html, $title, $minimumWords = 2100) {
     return $html;
 }
 
-function buildSeoBlock($title, $excerpt) {
-    $keywords = [
-        $title,
-        $title . ' review',
-        $title . ' specs',
-        $title . ' price',
-        $title . ' reliability',
-        $title . ' pros and cons',
-        $title . ' vs competitors',
-        'best car buying guide'
-    ];
-
+function buildSeoBlock($title, $excerpt, array $nicheMeta = []) {
+    $keywords = buildNicheSeoKeywords($title, $nicheMeta);
     $metaDescription = mb_substr(trim((string)$excerpt), 0, 155);
     $keywordHtml = '<ul><li>' . implode('</li><li>', array_map('e', $keywords)) . '</li></ul>';
+    $categoryLabel = trim((string)$nicheMeta['label']);
+    $pageLabel = $categoryLabel !== '' ? $categoryLabel : 'Buyer Guide';
 
     return [
-        'meta_title' => $title . ' | SEO Review & Buyer Guide',
+        'meta_title' => $title . ' | ' . $pageLabel,
         'meta_description' => $metaDescription,
         'keywords' => $keywords,
         'html_block' => "<section class='seo-optimization'><h2>SEO Focus Keywords</h2>{$keywordHtml}<p><strong>Meta Description:</strong> " . e($metaDescription) . "</p></section>",
@@ -2613,13 +2677,22 @@ function buildArticleTableOfContents(array $sections) {
 }
 
 function generateArticle($title) {
+    $title = cleanAndNormalizeTitle($title);
+    if ($title === '') {
+        $title = 'New Release Review';
+    }
+
     $activeNicheSlug = getActiveNicheSlug();
     $nicheMeta = getNicheArticleMeta($activeNicheSlug);
     $model = trim(preg_replace('/\b(202[0-9]|20[0-9]{2})\b/', '', $title));
     $isEV = stripos($title, 'EV') !== false || stripos($title, 'electric') !== false || str_contains(mb_strtolower($nicheMeta['slug'], 'UTF-8'), 'ev');
     $bodyType = classifyVehicleProfile($title);
+    $topicContext = trim((string)$nicheMeta['intro_context']);
+    if ($topicContext === '') {
+        $topicContext = 'audience expectations, topical relevance, and niche-specific value';
+    }
 
-    $content = "<h1>" . htmlspecialchars($title) . "</h1>\n";
+    $content = "<h1>" . htmlspecialchars($title, ENT_QUOTES, 'UTF-8') . "</h1>\n";
     $content .= "<p class='text-muted'>Published " . date('F j, Y') . " • " . htmlspecialchars($nicheMeta['label'], ENT_QUOTES, 'UTF-8') . "</p>\n";
     $coverImage = buildUniqueArticleImageUrl($title, $model);
     $imageAltSuffix = trim((string)getSetting('seo_image_alt_suffix', ' - car image'));
@@ -2628,8 +2701,10 @@ function generateArticle($title) {
     $imageTitle = trim($title . ' ' . ltrim($imageTitleSuffix, '- '));
     $content .= "<img src='" . htmlspecialchars($coverImage, ENT_QUOTES, 'UTF-8') . "' class='img-fluid rounded mb-4' alt='" . htmlspecialchars($imageAlt, ENT_QUOTES, 'UTF-8') . "' title='" . htmlspecialchars($imageTitle, ENT_QUOTES, 'UTF-8') . "' loading='eager' decoding='async' fetchpriority='high'>\n";
     $content .= "<p>" . getRandomIntro($title, $nicheMeta) . " This review follows an editorial structure designed to deliver deep analysis, clear comparisons, and practical buying guidance.</p>\n";
-    $content .= "<p>This {$title} review is optimized to answer the top buyer questions around " . htmlspecialchars($nicheMeta['intro_context'], ENT_QUOTES, 'UTF-8') . ".</p>\n";
+    $content .= "<p>The article is written for " . htmlspecialchars($nicheMeta['label'], ENT_QUOTES, 'UTF-8') . " readers and focuses on " . htmlspecialchars($topicContext, ENT_QUOTES, 'UTF-8') . " to make the decision easier for people who want more than surface-level advice.</p>\n";
+    $content .= "<p>This {$title} review is optimized to answer the top buyer questions around " . htmlspecialchars($topicContext, ENT_QUOTES, 'UTF-8') . ".</p>\n";
     $content .= "<p><strong>Quick Take:</strong> The {$title} is a {$bodyType}-class product focused on balanced performance, everyday usability, and ownership predictability rather than one-dimensional headline metrics.</p>\n";
+    $content .= "<p>We evaluate it with a focus on " . htmlspecialchars(getNicheWritingAngle($nicheMeta), ENT_QUOTES, 'UTF-8') . ", so the coverage stays aligned with the most meaningful buying signals for this niche.</p>\n";
     $content .= "<h2>What You Will Learn in This Guide</h2>\n";
     $content .= "<ul><li>How {$title} performs in real ownership conditions, not only in launch marketing.</li><li>Which trim strategy makes the most financial sense for different buyer types.</li><li>Where {$title} stands versus competitors in comfort, tech, efficiency, and long-term value.</li></ul>\n";
 
@@ -2712,7 +2787,7 @@ function generateArticle($title) {
     $content .= "<p class='mt-3'>The {$title} succeeds because it behaves like a complete product, not a collection of isolated features. It combines emotional appeal with practical intelligence, and that combination is exactly what modern buyers need in an uncertain, fast-evolving market. If your priority is a vehicle that remains convincing beyond launch-week excitement, this model is a serious and well-justified candidate.</p>";
 
     $minimumWords = getSettingInt('min_words', 3000, 1200, 300000);
-    $content = ensureMinimumWordCount($content, $title, $minimumWords);
+    $content = ensureMinimumWordCount($content, $title, $minimumWords, $nicheMeta);
 
     $plainText = trim(strip_tags($content));
     $excerpt = mb_substr($plainText, 0, 340);
@@ -2720,7 +2795,7 @@ function generateArticle($title) {
         $excerpt .= '...';
     }
 
-    $seo = buildSeoBlock($title, $excerpt);
+    $seo = buildSeoBlock($title, $excerpt, $nicheMeta);
     $content .= "\n" . $seo['html_block'];
     $content .= "\n" . buildFaqSchemaScript($title, $isEV);
 
